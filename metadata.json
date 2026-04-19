@@ -1,0 +1,6 @@
+{
+  "name": "StockLog (ストックログ)",
+  "description": "モバイルの片手操作とPCの効率性を両立した、高機能な個人向け在庫・備品管理アプリ。開封済みの個別残量管理（グラム・パーセント）やアラート機能、JSONデータ移行機能を備え、プライバシーに配慮した完全ローカル動作を実現しています。",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

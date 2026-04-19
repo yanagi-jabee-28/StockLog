@@ -1,11 +1,42 @@
-<div align="center">
+# StockLog (ストックログ) 📦
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+**StockLog** は、日々の備品や食材の管理を「もっと楽に、直感的に」することを目指した、個人向けの在庫管理アプリケーションです。
 
-  <h1>Built with AI Studio</h2>
+## 🌟 特徴
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+- **オフライン・プライバシー重視**: 
+  全てのデータはブラウザの `localStorage` に保存されます。外部サーバーを介さないため、プライバシーが守られ、高速に動作します。
+- **モバイルファースト設計 (Vibrant UI)**: 
+  スマートフォンの片手操作、特に「親指」での使いやすさを徹底追求。鮮やかなカラーパレットで、毎日の管理が楽しくなります。
+- **プロフェッショナルなPC表示 (Master-Detail)**: 
+  大画面ではサイドバー付きのダッシュボード形式に切り替わり、大量のアイテムも効率的に管理できます。
+- **開封済み管理機能**: 
+  単なる在庫数だけでなく、開封した個体の「残存量（%、またはグラム数など）」を個別に管理できる「気の利いた」ロジックを搭載。
+- **安心のデータポータビリティ**: 
+  JSON形式でのエクスポート・インポートに対応。バックアップや機種変更時のデータ移行も簡単です。
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## 🚀 使い方
 
-</div>
+1. **アイテムの追加**: 
+   右下の「＋」ボタン（PCは右上のボタン）から名前、カテゴリ、単位を選んで登録。
+2. **在庫調整**: 
+   リストの大きな「ー」ボタンで消費、「＋」ボタンで補充。
+3. **開封**: 
+   ストックを使い始めたら「開封」ボタン。個別の残量管理が始まります。
+4. **アラート**: 
+   在庫が設定した基準値を下回ると赤く表示され、買い忘れを防ぎます。
+
+## 🛠️ 技術スタック
+
+- **Frontend**: React 19, TypeScript
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **Storage**: Browser LocalStorage
+- **Build Tool**: Vite
+
+## 📄 ライセンス
+
+このプロジェクトは MIT ライセンスの下で公開されています。
+
+---
+Build with [Google AI Studio](https://ai.studio/apps/cf93f8bf-7fd1-41ca-9a7c-e8395e8891e8)
