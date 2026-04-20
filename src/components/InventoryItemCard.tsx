@@ -1,7 +1,8 @@
+import React from 'react';
 import { InventoryItem } from '../types';
 import { Minus, Plus, AlertCircle, Trash2, BoxSelect } from 'lucide-react';
 
-interface Props {
+interface InventoryItemCardProps {
   item: InventoryItem;
   onIncrement: (id: string) => void;
   onDecrement: (id: string) => void;
@@ -12,7 +13,7 @@ interface Props {
 
 const REMAINING_OPTIONS = ['100%', '75%', '50%', '25%', 'ほぼ空'];
 
-export function InventoryItemCard({ item, onIncrement, onDecrement, onDelete, onOpen, onUpdateRemaining }: Props) {
+export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, onIncrement, onDecrement, onDelete, onOpen, onUpdateRemaining }) => {
   const isAlert = item.stock <= item.alertThreshold;
 
   return (

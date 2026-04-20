@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, Download, Upload, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { storage, DEFAULT_CATEGORIES } from '../lib/storage';
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Settings, Plus, Boxes } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { InventoryItemCard } from './components/InventoryItemCard';
@@ -181,7 +181,7 @@ export default function App() {
         onClose={() => setIsAddModalOpen(false)} 
         categories={categories}
         onAdd={addItem}
-        defaultCategoryId={activeCategoryId}
+        initialCategory={activeCategoryId}
       />
       
       <SettingsModal 

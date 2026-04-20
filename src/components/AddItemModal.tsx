@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Category, InventoryItem } from '../types';
 import { X } from 'lucide-react';
 
@@ -7,7 +7,7 @@ interface Props {
   onClose: () => void;
   categories: Category[];
   onAdd: (item: Omit<InventoryItem, 'id'>) => void;
-  defaultCategoryId: string;
+  initialCategory: string;
 }
 
 const UNIT_GROUPS = [
@@ -16,19 +16,19 @@ const UNIT_GROUPS = [
   { label: '容量', units: ['ml', 'L'] },
 ];
 
-export function AddItemModal({ isOpen, onClose, categories, onAdd, defaultCategoryId }: Props) {
+export function AddItemModal({ isOpen, onClose, categories, onAdd, initialCategory }: Props) {
   const [name, setName] = useState('');
-  const [categoryId, setCategoryId] = useState(defaultCategoryId);
+  const [categoryId, setCategoryId] = useState(initialCategory);
   const [stock, setStock] = useState('0');
   const [unit, setUnit] = useState('個');
   const [alertThreshold, setAlertThreshold] = useState('1');
 
-  // Sync categoryId when defaultCategoryId changes (e.g. user switched category before opening modal)
+  // Sync categoryId when initialCategory changes (e.g. user switched category before opening modal)
   useEffect(() => {
     if (isOpen) {
-      setCategoryId(defaultCategoryId);
+      setCategoryId(initialCategory);
     }
-  }, [isOpen, defaultCategoryId]);
+  }, [isOpen, initialCategory]);
 
   if (!isOpen) return null;
 
