@@ -17,72 +17,73 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, onIn
   const isAlert = item.stock <= item.alertThreshold;
 
   return (
-    <div className={`relative p-5 rounded-[1.75rem] transition-all duration-200 ${
-      isAlert 
-        ? 'bg-rose-50 border border-rose-200 shadow-sm' 
-        : 'bg-white border border-gray-100 hover:shadow-lg hover:border-violet-100 shadow-sm'
-    }`}>
+    <div className="group relative bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-violet-500/5 hover:border-violet-100 transition-all duration-300 flex flex-col min-h-[180px]">
       
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex flex-col gap-2 pr-4">
-          <div className="flex items-center gap-2">
-            <h3 className={`font-extrabold text-xl line-clamp-1 tracking-tight ${isAlert ? 'text-rose-900' : 'text-gray-900'}`}>
-              {item.name}
-            </h3>
-            {isAlert && <AlertCircle className="w-5 h-5 text-rose-50 text-rose-500 fill-rose-50 flex-shrink-0 animate-pulse" />}
-            {item.isOpened && (
-              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black rounded-md border border-amber-200 uppercase tracking-tighter">
-                開封済
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-             <span className={`text-xs font-bold px-2.5 py-1 rounded-md ${isAlert ? 'bg-rose-100 text-rose-700' : 'bg-gray-100 text-gray-500'}`}>
-               {item.unit}
-             </span>
-             <span className={`text-[11px] font-bold tracking-wider uppercase ${isAlert ? 'text-rose-600' : 'text-gray-400'}`}>
-               Alert: {item.alertThreshold}
-             </span>
-          </div>
-        </div>
+      {/* Status Indicators Layer */}
+      <div className="absolute top-4 right-4 flex gap-2">
+        {item.isOpened && (
+          <span className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-100 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            開封済
+          </span>
+        )}
+        {isAlert && (
+          <span className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-full border border-rose-100 whitespace-nowrap animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            在庫僅少
+          </span>
+        )}
         <button 
           onClick={() => onDelete(item.id)}
-          className="p-2 -mt-1 -mr-1 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors flex-shrink-0"
+          className="p-1.5 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
           aria-label="削除"
         >
-          <Trash2 className="w-[18px] h-[18px]" />
+          <Trash2 className="w-4 h-4" />
         </button>
+      </div>
+
+      <div className="flex flex-col gap-1 mb-6">
+        <h3 className="font-bold text-lg text-gray-900 tracking-tight leading-tight pr-20 line-clamp-1">
+          {item.name}
+        </h3>
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md">
+            {item.unit}
+          </span>
+          <span className="text-[10px] font-medium text-gray-300 tracking-wider">
+            閾値: {item.alertThreshold}
+          </span>
+        </div>
       </div>
 
       {/* Opened state: Remaining Amount Selector */}
       {item.isOpened && onUpdateRemaining && (
-        <div className="mb-5 bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
-          <p className="text-[10px] font-black text-amber-600 uppercase mb-2 tracking-widest pl-1">Remaining Status</p>
+        <div className="mb-6">
+          <p className="text-[10px] font-bold text-gray-400 uppercase mb-2.5 tracking-widest">残り</p>
           
-          {/* Custom Weight/Volume Input if unit is g/ml */}
           {['g', 'ml', 'グラム', 'ミリリットル'].includes(item.unit.toLowerCase()) ? (
-            <div className="flex items-center gap-3 bg-white p-1 rounded-xl border border-amber-100">
+            <div className="relative flex items-center group/input">
               <input
                 type="number"
                 value={parseInt(item.remainingAmount || '0') || ''}
                 onChange={(e) => onUpdateRemaining(item.id, e.target.value + item.unit)}
-                placeholder={`残り (${item.unit})`}
-                className="flex-1 bg-transparent px-3 py-1.5 text-sm font-bold text-amber-900 outline-none placeholder:text-amber-200"
+                placeholder="0"
+                className="w-full bg-gray-50 px-4 py-2 rounded-xl text-sm font-mono font-bold text-gray-900 outline-none border border-transparent focus:border-amber-200 focus:bg-white transition-all text-right pr-12"
               />
-              <span className="text-xs font-black text-amber-400 pr-3 uppercase tracking-tighter">
+              <span className="absolute right-4 text-[10px] font-bold text-gray-400">
                 {item.unit}
               </span>
             </div>
           ) : (
-            <div className="flex justify-between items-center gap-1.5">
+            <div className="flex gap-1">
               {REMAINING_OPTIONS.map((opt) => (
                 <button
                   key={opt}
-                  onClick={() => onUpdateRemaining(item.id, opt)}
-                  className={`flex-1 text-[10px] py-2 rounded-xl font-bold transition-all ${
+                  onClick={() => opt !== item.remainingAmount && onUpdateRemaining(item.id, opt)}
+                  className={`flex-1 text-[10px] py-1.5 rounded-lg font-bold transition-all border ${
                     item.remainingAmount === opt 
-                      ? 'bg-amber-500 text-white shadow-md shadow-amber-200' 
-                      : 'bg-white text-amber-700 border border-amber-100 hover:bg-amber-50'
+                      ? 'bg-amber-500 text-white border-amber-600 shadow-sm' 
+                      : 'bg-white text-gray-500 border-gray-100 hover:border-amber-200 hover:text-amber-600'
                   }`}
                 >
                   {opt}
@@ -93,54 +94,51 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, onIn
         </div>
       )}
 
-      <div className="flex justify-between items-center mt-auto">
-        {/* Open Button (Visible if stock > 0 and not already opened) */}
-        <div className="flex-1">
-           {item.stock > 0 && !item.isOpened && onOpen ? (
-             <button
-               onClick={() => onOpen(item.id)}
-               className="flex items-center gap-1.5 px-4 py-2 bg-violet-50 text-violet-600 hover:bg-violet-100 rounded-full transition-all text-xs font-black uppercase tracking-tight"
-             >
-               <BoxSelect className="w-4 h-4" />
-               開封する
-             </button>
-           ) : (
-             <div className="text-gray-400 text-sm font-bold pl-1 uppercase tracking-widest">
-               Stock
-             </div>
-           )}
-        </div>
-
-        {/* Action Controls */}
-        <div className={`flex items-center gap-3 p-1.5 rounded-full border ${isAlert ? 'bg-white border-rose-100' : 'bg-gray-50 border-gray-100'}`}>
-          <button
-            onClick={() => onIncrement(item.id)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-violet-600 shadow-sm border border-gray-100 active:scale-95 transition-all hover:bg-violet-50"
-            aria-label="追加"
-          >
-            <Plus className="w-[18px] h-[18px]" strokeWidth={3} />
-          </button>
-          
-          <div className="w-10 text-center flex flex-col items-center justify-center">
-            <span className={`text-2xl font-black tracking-tighter leading-none ${isAlert ? 'text-rose-600' : 'text-gray-900'}`}>
+      <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-50">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-1">Stock</span>
+          <div className="flex items-baseline gap-1">
+            <span className={`text-4xl font-mono font-bold tracking-tighter ${isAlert ? 'text-rose-600' : 'text-gray-900'}`}>
               {item.stock}
             </span>
+            <span className="text-xs font-bold text-gray-400">{item.unit}</span>
           </div>
+        </div>
 
-          <button
-            onClick={() => onDecrement(item.id)}
-            disabled={item.stock <= 0}
-            className={`w-12 h-12 flex items-center justify-center rounded-full text-white shadow-md transition-all ${
-              item.stock > 0 
-                ? 'bg-violet-600 active:scale-95 hover:bg-violet-500 shadow-violet-200' 
-                : 'bg-gray-200 cursor-not-allowed shadow-none'
-            }`}
-            aria-label="消費"
-          >
-            <Minus className="w-[20px] h-[20px]" strokeWidth={3} />
-          </button>
+        <div className="flex items-center gap-2">
+          {item.stock > 0 && !item.isOpened && onOpen && (
+            <button
+              onClick={() => onOpen(item.id)}
+              className="mr-2 flex items-center justify-center p-2.5 bg-violet-50 text-violet-600 hover:bg-violet-100 rounded-xl transition-all"
+              title="開封する"
+            >
+              <BoxSelect className="w-5 h-5" />
+            </button>
+          )}
+
+          <div className="flex items-center p-1 bg-gray-50 rounded-2xl border border-gray-100">
+            <button
+              onClick={() => onDecrement(item.id)}
+              disabled={item.stock <= 0}
+              className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
+                item.stock > 0 
+                  ? 'bg-white text-gray-700 shadow-sm hover:text-rose-600 active:scale-95' 
+                  : 'text-gray-300 cursor-not-allowed'
+              }`}
+              aria-label="消費"
+            >
+              <Minus className="w-4 h-4" strokeWidth={3} />
+            </button>
+            <button
+              onClick={() => onIncrement(item.id)}
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-violet-600 text-white shadow-lg shadow-violet-200 hover:bg-violet-700 active:scale-95 transition-all"
+              aria-label="追加"
+            >
+              <Plus className="w-4 h-4" strokeWidth={3} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+};
