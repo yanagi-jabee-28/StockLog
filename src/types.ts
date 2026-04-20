@@ -18,6 +18,8 @@ export interface InventoryItem {
   archivedAt?: string;
   createdAt: string;
   originalItemId?: string; // Links an opened item back to its original stock item
+  expiryDate?: string; // Optional expiry/best-before date
+  notes?: string; // Optional notes or remarks
 }
 
 export type ActivityType = 

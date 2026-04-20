@@ -13,6 +13,9 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'frozen', name: '❄️ 冷凍・ストック' },
   { id: 'pantry', name: '🧂 調味料・乾物' },
   { id: 'daily', name: '🧻 日用品・消耗品' },
+  { id: 'hobby', name: '🎨 趣味・ホビー' },
+  { id: 'stationery', name: '🖋️ 文具・事務用品' },
+  { id: 'med_cosme', name: '💄 常備薬・コスメ' },
 ];
 
 export const storage = {
@@ -89,30 +92,57 @@ export const storage = {
   },
 
   exportData: (): string => {
+    const items = storage.getItems();
+    const categories = storage.getCategories();
+    const activities = storage.getActivities();
+    
     const data = {
-      items: storage.getItems(),
-      categories: storage.getCategories(),
-      activities: storage.getActivities(),
-      exportDate: new Date().toISOString()
+      version: '1.0.0',
+      appName: 'StockLog',
+      exportDate: new Date().toISOString(),
+      data: {
+        items,
+        categories,
+        activities
+      }
     };
     return JSON.stringify(data, null, 2);
   },
 
   importData: (jsonString: string): boolean => {
     try {
-      const data = JSON.parse(jsonString);
-      if (data.items && Array.isArray(data.items)) {
-        storage.setItems(data.items);
+      const parsed = JSON.parse(jsonString);
+      
+      // Compatibility Layer: Handle both flat and nested formats
+      const items = (parsed.data?.items || parsed.items) as InventoryItem[];
+      const categories = (parsed.data?.categories || parsed.categories) as Category[];
+      const activities = (parsed.data?.activities || parsed.activities) as ActivityEntry[];
+
+      if (!items || !Array.isArray(items)) {
+        throw new Error('Invalid items data');
       }
-      if (data.categories && Array.isArray(data.categories)) {
-        storage.setCategories(data.categories);
+
+      // Basic validation and sanitization
+      const sanitizedItems = items.map(item => ({
+        ...item,
+        stock: Math.max(0, item.stock || 0),
+        isOpened: !!item.isOpened,
+        isArchived: !!item.isArchived,
+      }));
+
+      storage.setItems(sanitizedItems);
+
+      if (categories && Array.isArray(categories)) {
+        storage.setCategories(categories);
       }
-      if (data.activities && Array.isArray(data.activities)) {
-        localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(data.activities));
+
+      if (activities && Array.isArray(activities)) {
+        localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(activities.slice(0, 1000)));
       }
+
       return true;
     } catch (e) {
-      console.error('Failed to parse import data', e);
+      console.error('Failed to import data:', e);
       return false;
     }
   }

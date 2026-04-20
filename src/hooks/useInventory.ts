@@ -188,7 +188,7 @@ export function useInventory() {
       id: crypto.randomUUID(), 
       stock: newStock, // Ensure consistency from the start
       isOpened: true,
-      categoryId: sourceItem.categoryId === 'daily' ? 'priority_daily' : 'priority',
+      categoryId: ['daily', 'stationery', 'med_cosme', 'hobby'].includes(sourceItem.categoryId) ? 'priority_daily' : 'priority',
       remainingAmount: '100',
       remainingPercent: 100,
       originalItemId: sourceItem.id
@@ -227,6 +227,31 @@ export function useInventory() {
       refreshActivities();
     }
   }, [items, updateItem, refreshActivities]);
+
+  const unopenItem = useCallback((id: string) => {
+    const target = items.find(i => i.id === id);
+    if (!target || !target.isOpened || !target.originalItemId) return;
+    
+    const originalItem = items.find(i => i.id === target.originalItemId);
+    const newStock = (originalItem?.stock ?? target.stock) + 1;
+
+    // 1. Update original and other clones
+    const updatedPool = items.filter(item => item.id !== id).map(item => {
+      if (item.id === target.originalItemId || item.originalItemId === target.originalItemId) {
+        return { ...item, stock: newStock };
+      }
+      return item;
+    });
+
+    saveItems(updatedPool);
+    storage.addActivity({
+      itemId: target.originalItemId,
+      itemName: target.name,
+      type: 'stock_up',
+      details: `開封の取り消し (使用中アイテムをストックに戻しました)`
+    });
+    refreshActivities();
+  }, [items, saveItems, refreshActivities]);
 
   const archiveItem = useCallback((id: string) => {
     const target = items.find(i => i.id === id);
@@ -273,6 +298,7 @@ export function useInventory() {
     decrementStock,
     deleteItem,
     openItem,
+    unopenItem,
     updateRemainingAmount,
     archiveItem,
     deleteActivity,

@@ -1,6 +1,23 @@
 import React from 'react';
 import { InventoryItem } from '../types';
-import { Minus, Plus, AlertCircle, Trash2, BoxSelect, Settings2, Archive } from 'lucide-react';
+import { Minus, Plus, Trash2, BoxSelect, Settings2, Archive, RotateCcw, Calendar, Copy, FileText } from 'lucide-react';
+
+const getExpiryStatus = (expiryDate?: string) => {
+  if (!expiryDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(expiryDate);
+  expiry.setHours(0, 0, 0, 0);
+  
+  const diffTime = expiry.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) return { label: `期限切れ (${Math.abs(diffDays)}日経過)`, color: 'text-rose-600', isCritical: true };
+  if (diffDays === 0) return { label: '今日が期限', color: 'text-rose-500', isCritical: true };
+  if (diffDays <= 3) return { label: `あと${diffDays}日`, color: 'text-rose-500', isCritical: true };
+  if (diffDays <= 7) return { label: `あと${diffDays}日`, color: 'text-amber-500', isCritical: false };
+  return { label: `あと${diffDays}日`, color: 'text-gray-400', isCritical: false };
+};
 
 interface InventoryItemCardProps {
   item: InventoryItem;
@@ -8,15 +25,29 @@ interface InventoryItemCardProps {
   onDecrement: (id: string) => void;
   onDelete: (id: string) => void;
   onOpen?: (id: string) => void;
+  onUnopen?: (id: string) => void;
   onEdit?: (item: InventoryItem) => void;
+  onDuplicate?: (item: InventoryItem) => void;
   onArchive?: (id: string) => void;
   onUpdateRemaining?: (id: string, amount: string) => void;
 }
 
-export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, onIncrement, onDecrement, onDelete, onOpen, onEdit, onArchive, onUpdateRemaining }) => {
+export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ 
+  item, 
+  onIncrement, 
+  onDecrement, 
+  onDelete, 
+  onOpen, 
+  onUnopen, 
+  onEdit, 
+  onDuplicate,
+  onArchive, 
+  onUpdateRemaining 
+}) => {
   const isStockAlert = item.stock <= item.alertThreshold;
   const isPercentAlert = item.isOpened && (item.remainingPercent ?? 100) <= (item.alertThresholdPercent ?? 20);
-  const isAlert = isStockAlert || isPercentAlert;
+  const expiryStatus = getExpiryStatus(item.expiryDate);
+  const isAlert = isStockAlert || isPercentAlert || (expiryStatus?.isCritical ?? false);
 
   const handlePercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onUpdateRemaining) {
@@ -34,17 +65,36 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, onIn
           <h3 className="font-black text-xl text-gray-900 tracking-tight leading-tight truncate">
             {item.name}
           </h3>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
-              {item.unit}
-            </span>
-            <span className="text-[9px] font-bold text-gray-300 uppercase tracking-wider">
-              {item.alertThreshold}{item.unit} / {item.alertThresholdPercent ?? 20}%
-            </span>
+          <div className="flex flex-col gap-1 mt-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+                {item.unit}
+              </span>
+              <span className="text-[9px] font-bold text-gray-300 uppercase tracking-wider">
+                {item.alertThreshold}{item.unit} / {item.alertThresholdPercent ?? 20}%
+              </span>
+            </div>
+            {expiryStatus && (
+              <div className={`flex items-center gap-1.5 text-[10px] font-bold ${expiryStatus.color}`}>
+                <Calendar className="w-3 h-3" />
+                <span>{expiryStatus.label}</span>
+                <span className="text-[9px] opacity-60 font-medium">({item.expiryDate})</span>
+              </div>
+            )}
           </div>
         </div>
         
         <div className="flex items-center gap-1 shrink-0">
+          {!item.isOpened && !item.isArchived && onDuplicate && (
+            <button 
+              onClick={() => onDuplicate(item)}
+              className="p-2 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
+              title="別ロットを追加 (複製)"
+              aria-label="複製"
+            >
+              <Copy className="w-4 h-4" />
+            </button>
+          )}
           <button 
             onClick={() => {
               console.log(`[UI_DEBUG] Editing item: ${item.name}`, item);
@@ -66,12 +116,24 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, onIn
       </div>
 
       {/* Badges Section: Stacked below title to prevent overlap */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap items-center gap-2 mb-6">
         {item.isOpened && (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-white text-[10px] font-black rounded-full shadow-lg shadow-amber-100 border border-amber-500 whitespace-nowrap">
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-            USING
-          </span>
+          <>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-white text-[10px] font-black rounded-full shadow-lg shadow-amber-100 border border-amber-500 whitespace-nowrap">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              USING
+            </span>
+            {!item.isArchived && onUnopen && (
+              <button 
+                onClick={() => onUnopen(item.id)}
+                className="flex items-center gap-1 text-[8px] font-bold text-gray-300 hover:text-gray-500 transition-colors uppercase tracking-widest pl-1"
+                title="開封を取り消してストックに戻す"
+              >
+                <RotateCcw className="w-2.5 h-2.5" />
+                開封を取消
+              </button>
+            )}
+          </>
         )}
         {isAlert && !item.isArchived && (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-500 text-white text-[10px] font-black rounded-full shadow-lg shadow-rose-100 border border-rose-600 whitespace-nowrap animate-bounce">
@@ -90,6 +152,15 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, onIn
           </span>
         )}
       </div>
+
+      {item.notes && !item.isArchived && (
+        <div className="mb-6 px-4 py-3 bg-gray-50/50 rounded-2xl border border-gray-100/50 flex items-start gap-2.5">
+          <FileText className="w-3.5 h-3.5 text-gray-300 mt-0.5 shrink-0" />
+          <p className="text-[11px] leading-relaxed text-gray-500 font-medium break-words">
+            {item.notes}
+          </p>
+        </div>
+      )}
 
       {/* Opened state: Gauge Slider */}
       {item.isOpened && !item.isArchived && onUpdateRemaining && (

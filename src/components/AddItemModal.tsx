@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Category, InventoryItem } from '../types';
-import { X } from 'lucide-react';
+import { X, Search, BoxSelect, FileText } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   categories: Category[];
+  items: InventoryItem[];
   onAdd: (item: Omit<InventoryItem, 'id' | 'createdAt'>) => void;
   onEdit?: (id: string, updates: Partial<InventoryItem>) => void;
   initialCategory: string;
   editItem?: InventoryItem | null;
+  isDuplicate?: boolean;
 }
 
 const UNIT_GROUPS = [
@@ -18,13 +20,44 @@ const UNIT_GROUPS = [
   { label: '容量', units: ['ml', 'L'] },
 ];
 
-export function AddItemModal({ isOpen, onClose, categories, onAdd, onEdit, initialCategory, editItem }: Props) {
+export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit, initialCategory, editItem, isDuplicate }: Props) {
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState(initialCategory);
   const [stock, setStock] = useState('0');
   const [unit, setUnit] = useState('個');
   const [alertThreshold, setAlertThreshold] = useState('1');
   const [alertThresholdPercent, setAlertThresholdPercent] = useState('20');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [notes, setNotes] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Derive unique suggestions from existing items
+  const suggestions = useMemo(() => {
+    if (!name.trim() || name.length < 1) return [];
+    
+    // Get unique items by name strategy
+    const uniqueItemsMap = new Map<string, InventoryItem>();
+    items.forEach(item => {
+      const lowerName = item.name.toLowerCase();
+      if (!uniqueItemsMap.has(lowerName)) {
+        uniqueItemsMap.set(lowerName, item);
+      }
+    });
+
+    return Array.from(uniqueItemsMap.values())
+      .filter(item => 
+        item.name.toLowerCase().includes(name.toLowerCase()) && 
+        item.name.toLowerCase() !== name.toLowerCase()
+      )
+      .slice(0, 5); // Limit to top 5
+  }, [items, name]);
+
+  const handleSelectSuggestion = (suggestion: InventoryItem) => {
+    setName(suggestion.name);
+    setCategoryId(suggestion.categoryId);
+    setUnit(suggestion.unit);
+    setShowSuggestions(false);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -35,6 +68,8 @@ export function AddItemModal({ isOpen, onClose, categories, onAdd, onEdit, initi
         setUnit(editItem.unit);
         setAlertThreshold(editItem.alertThreshold.toString());
         setAlertThresholdPercent((editItem.alertThresholdPercent ?? 20).toString());
+        setExpiryDate(editItem.expiryDate || '');
+        setNotes(editItem.notes || '');
       } else {
         setName('');
         setCategoryId(initialCategory);
@@ -42,11 +77,15 @@ export function AddItemModal({ isOpen, onClose, categories, onAdd, onEdit, initi
         setUnit('個');
         setAlertThreshold('1');
         setAlertThresholdPercent('20');
+        setExpiryDate('');
+        setNotes('');
       }
     }
   }, [isOpen, initialCategory, editItem]);
 
   if (!isOpen) return null;
+
+  const showsExpiry = ['priority', 'beverages', 'grocery', 'frozen', 'pantry', 'med_cosme', 'prepped'].includes(categoryId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,9 +98,11 @@ export function AddItemModal({ isOpen, onClose, categories, onAdd, onEdit, initi
       unit: unit.trim() || '個',
       alertThreshold: parseInt(alertThreshold) || 0,
       alertThresholdPercent: parseInt(alertThresholdPercent) || 20,
+      expiryDate: expiryDate || undefined,
+      notes: notes.trim() || undefined,
     };
 
-    if (editItem && onEdit) {
+    if (editItem && onEdit && !isDuplicate) {
       onEdit(editItem.id, data);
     } else {
       onAdd(data);
@@ -79,10 +120,10 @@ export function AddItemModal({ isOpen, onClose, categories, onAdd, onEdit, initi
         <div className="flex items-start justify-between mb-10">
           <div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-              {editItem ? 'Edit Item' : 'Add New Item'}
+              {isDuplicate ? 'Add Another Batch' : editItem ? 'Edit Item' : 'Add New Item'}
             </h2>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-              {editItem ? 'アイテム情報の編集' : 'アイテムの新規登録'}
+              {isDuplicate ? '別ロット・在庫を追加' : editItem ? 'アイテム情報の編集' : 'アイテムの新規登録'}
             </p>
           </div>
           <button 
@@ -94,18 +135,54 @@ export function AddItemModal({ isOpen, onClose, categories, onAdd, onEdit, initi
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          <div>
+          <div className="relative">
             <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
               品名
             </label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all font-bold text-gray-900"
-              placeholder="例: トマト水煮缶"
-            />
+            <div className="relative group/input">
+              <div className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within/input:text-violet-500 transition-colors">
+                <Search className="w-5 h-5" />
+              </div>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={e => {
+                  setName(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay to allow click detection
+                className="w-full pl-14 pr-6 py-4 bg-gray-50 border border-transparent rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all font-bold text-gray-900"
+                placeholder="例: トマト水煮缶"
+              />
+            </div>
+            
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-gray-100 rounded-[1.5rem] shadow-2xl shadow-gray-200/50 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="p-2 border-b border-gray-50 bg-gray-50/50">
+                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest pl-2">登録済みの商品から入力</p>
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  {suggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.id}
+                      type="button"
+                      onClick={() => handleSelectSuggestion(suggestion)}
+                      className="w-full text-left px-5 py-4 hover:bg-gray-50 transition-colors flex items-center justify-between group/sug"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-bold text-gray-900 text-sm">{suggestion.name}</span>
+                        <span className="text-[10px] text-gray-400 font-medium">
+                          {categories.find(c => c.id === suggestion.categoryId)?.name} · {suggestion.unit}
+                        </span>
+                      </div>
+                      <BoxSelect className="w-4 h-4 text-gray-200 group-hover/sug:text-violet-400 transition-colors" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -159,6 +236,37 @@ export function AddItemModal({ isOpen, onClose, categories, onAdd, onEdit, initi
             </div>
           </div>
 
+          {showsExpiry && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+              <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
+                賞味期限・期限
+              </label>
+              <input
+                type="date"
+                value={expiryDate}
+                onChange={e => setExpiryDate(e.target.value)}
+                className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all font-bold text-gray-900"
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
+              備考・メモ
+            </label>
+            <div className="relative group/notes">
+              <div className="absolute left-6 top-5 text-gray-300 group-focus-within/notes:text-violet-500 transition-colors">
+                <FileText className="w-5 h-5" />
+              </div>
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                className="w-full pl-14 pr-6 py-4 bg-gray-50 border border-transparent rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all font-medium text-gray-900 min-h-[100px] resize-none"
+                placeholder="例: Aメーカーのもの、特大パックなど"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
@@ -204,7 +312,7 @@ export function AddItemModal({ isOpen, onClose, categories, onAdd, onEdit, initi
               type="submit"
               className="w-full py-5 px-6 bg-gray-900 text-white text-lg font-black rounded-[1.5rem] shadow-2xl shadow-gray-200 hover:bg-black active:scale-[0.98] transition-all tracking-tight"
             >
-              {editItem ? 'Save Changes' : 'Add Item'}
+              {isDuplicate ? 'Add Item' : editItem ? 'Save Changes' : 'Add Item'}
             </button>
           </div>
         </form>

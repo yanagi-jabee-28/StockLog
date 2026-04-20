@@ -11,7 +11,8 @@ import {
   Trash2, 
   Gauge, 
   Settings2,
-  Clock
+  Clock,
+  Calendar
 } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { InventoryItemCard } from './components/InventoryItemCard';
@@ -39,6 +40,7 @@ export default function App() {
     decrementStock, 
     deleteItem,
     openItem,
+    unopenItem,
     updateRemainingAmount,
     updateItem,
     archiveItem,
@@ -51,19 +53,29 @@ export default function App() {
   
   const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || 'priority');
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [isDuplicateMode, setIsDuplicateMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<{id: string, details: string} | null>(null);
 
   const handleEditItem = (item: InventoryItem) => {
+    setIsDuplicateMode(false);
     setEditingItem(item);
+    setIsAddModalOpen(true);
+  };
+
+  const handleDuplicateItem = (item: InventoryItem) => {
+    setIsDuplicateMode(true);
+    // When duplicating, we want a new item with same metadata but stock starts at 0 or same as source
+    setEditingItem(item); 
     setIsAddModalOpen(true);
   };
 
   const handleCloseAddModal = () => {
     setIsAddModalOpen(false);
     setEditingItem(null);
+    setIsDuplicateMode(false);
   };
 
   // If categories finish loading asynchronously and active is out of sync, set it safely
@@ -81,7 +93,16 @@ export default function App() {
       const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return timeB - timeA;
     }
-    return 0;
+    
+    // 1. Sort by expiry date (earliest first)
+    if (a.expiryDate && b.expiryDate) {
+      return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
+    }
+    if (a.expiryDate) return -1; // a has date, b doesn't -> a comes first
+    if (b.expiryDate) return 1;  // b has date, a doesn't -> b comes first
+
+    // 2. Fallback to name
+    return a.name.localeCompare(b.name, 'ja');
   });
 
   const handleClearActivities = () => {
@@ -371,6 +392,8 @@ export default function App() {
                   onDecrement={decrementStock}
                   onDelete={deleteItem}
                   onOpen={openItem}
+                  onUnopen={unopenItem}
+                  onDuplicate={handleDuplicateItem}
                   onEdit={handleEditItem}
                   onArchive={archiveItem}
                   onUpdateRemaining={updateRemainingAmount}
@@ -431,10 +454,12 @@ export default function App() {
         isOpen={isAddModalOpen} 
         onClose={handleCloseAddModal} 
         categories={categories}
+        items={items}
         onAdd={addItem}
         onEdit={updateItem}
         initialCategory={activeCategoryId}
         editItem={editingItem}
+        isDuplicate={isDuplicateMode}
       />
       
       <SettingsModal 
