@@ -6,8 +6,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   categories: Category[];
-  onAdd: (item: Omit<InventoryItem, 'id'>) => void;
+  onAdd: (item: Omit<InventoryItem, 'id' | 'createdAt'>) => void;
+  onEdit?: (id: string, updates: Partial<InventoryItem>) => void;
   initialCategory: string;
+  editItem?: InventoryItem | null;
 }
 
 const UNIT_GROUPS = [
@@ -16,19 +18,33 @@ const UNIT_GROUPS = [
   { label: '容量', units: ['ml', 'L'] },
 ];
 
-export function AddItemModal({ isOpen, onClose, categories, onAdd, initialCategory }: Props) {
+export function AddItemModal({ isOpen, onClose, categories, onAdd, onEdit, initialCategory, editItem }: Props) {
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState(initialCategory);
   const [stock, setStock] = useState('0');
   const [unit, setUnit] = useState('個');
   const [alertThreshold, setAlertThreshold] = useState('1');
+  const [alertThresholdPercent, setAlertThresholdPercent] = useState('20');
 
-  // Sync categoryId when initialCategory changes (e.g. user switched category before opening modal)
   useEffect(() => {
     if (isOpen) {
-      setCategoryId(initialCategory);
+      if (editItem) {
+        setName(editItem.name);
+        setCategoryId(editItem.categoryId);
+        setStock(editItem.stock.toString());
+        setUnit(editItem.unit);
+        setAlertThreshold(editItem.alertThreshold.toString());
+        setAlertThresholdPercent((editItem.alertThresholdPercent ?? 20).toString());
+      } else {
+        setName('');
+        setCategoryId(initialCategory);
+        setStock('0');
+        setUnit('個');
+        setAlertThreshold('1');
+        setAlertThresholdPercent('20');
+      }
     }
-  }, [isOpen, initialCategory]);
+  }, [isOpen, initialCategory, editItem]);
 
   if (!isOpen) return null;
 
@@ -36,40 +52,50 @@ export function AddItemModal({ isOpen, onClose, categories, onAdd, initialCatego
     e.preventDefault();
     if (!name.trim()) return;
 
-    onAdd({
+    const data = {
       name: name.trim(),
       categoryId,
       stock: parseInt(stock) || 0,
       unit: unit.trim() || '個',
       alertThreshold: parseInt(alertThreshold) || 0,
-    });
+      alertThresholdPercent: parseInt(alertThresholdPercent) || 20,
+    };
+
+    if (editItem && onEdit) {
+      onEdit(editItem.id, data);
+    } else {
+      onAdd(data);
+    }
     
-    // Reset and close
-    setName('');
-    setStock('0');
-    setAlertThreshold('1');
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center p-0 sm:p-6 transition-all">
       {/* Click outside to close */}
       <div className="absolute inset-0" onClick={onClose} />
       
-      <div className="relative w-full max-w-md bg-white rounded-t-[2rem] sm:rounded-[2rem] p-8 shadow-2xl max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:fade-in-from-bottom-4 duration-300">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-black text-gray-900 tracking-tight">新しく追加</h2>
+      <div className="relative w-full max-w-xl bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 md:p-12 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-12 sm:zoom-in-95 duration-300">
+        <div className="flex items-start justify-between mb-10">
+          <div>
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+              {editItem ? 'Edit Item' : 'Add New Item'}
+            </h2>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+              {editItem ? 'アイテム情報の編集' : 'アイテムの新規登録'}
+            </p>
+          </div>
           <button 
             onClick={onClose}
-            className="p-2 -mr-2 text-gray-400 rounded-full hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200 transition-colors"
+            className="w-10 h-10 flex items-center justify-center text-gray-300 rounded-full hover:bg-gray-50 transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-7">
+        <form onSubmit={handleSubmit} className="space-y-8">
           <div>
-            <label className="block text-sm font-bold text-gray-600 mb-2 uppercase tracking-wide">
+            <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
               品名
             </label>
             <input
@@ -77,49 +103,51 @@ export function AddItemModal({ isOpen, onClose, categories, onAdd, initialCatego
               required
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all font-bold text-gray-900"
+              className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all font-bold text-gray-900"
               placeholder="例: トマト水煮缶"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-600 mb-2 uppercase tracking-wide">
+            <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
               カテゴリ
             </label>
-            <div className="relative">
-              <select
-                value={categoryId}
-                onChange={e => setCategoryId(e.target.value)}
-                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all appearance-none font-bold text-gray-900 pr-10"
-              >
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
-              <div className="absolute inset-y-0 right-5 flex items-center pointer-events-none text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setCategoryId(cat.id)}
+                  className={`px-4 py-3 rounded-xl text-xs font-bold border transition-all ${
+                    categoryId === cat.id
+                      ? 'bg-gray-900 text-white border-gray-900 shadow-lg shadow-gray-200'
+                      : 'bg-white text-gray-400 border-gray-100 hover:border-gray-300'
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-600 mb-3 uppercase tracking-wide">
+            <label className="block text-[10px] font-bold text-gray-400 mb-4 uppercase tracking-widest pl-1">
               単位を選択
             </label>
             <div className="space-y-4">
               {UNIT_GROUPS.map((group) => (
                 <div key={group.label}>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{group.label}</p>
-                  <div className="flex flex-wrap gap-2">
+                  <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-2 ml-1">{group.label}</p>
+                  <div className="flex flex-wrap gap-1.5">
                     {group.units.map((u) => (
                       <button
                         key={u}
                         type="button"
                         onClick={() => setUnit(u)}
-                        className={`px-4 py-2.5 rounded-xl text-sm font-black transition-all border ${
+                        className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
                           unit === u 
-                            ? 'bg-violet-600 border-violet-600 text-white shadow-md shadow-violet-200 scale-[1.02]' 
-                            : 'bg-white border-gray-100 text-gray-500 hover:border-violet-200 hover:bg-violet-50'
+                            ? 'bg-violet-50 border-violet-200 text-violet-700 shadow-sm' 
+                            : 'bg-white border-gray-100 text-gray-400 hover:border-gray-300 hover:text-gray-600'
                         }`}
                       >
                         {u}
@@ -131,39 +159,52 @@ export function AddItemModal({ isOpen, onClose, categories, onAdd, initialCatego
             </div>
           </div>
 
-          <div className="flex gap-5">
-            <div className="flex-1">
-              <label className="block text-sm font-bold text-gray-600 mb-2 uppercase tracking-wide">
-                初期在庫数
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
+                {editItem ? '現在庫数' : '初期在庫数'}
               </label>
               <input
                 type="number"
                 min="0"
                 value={stock}
                 onChange={e => setStock(e.target.value)}
-                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all text-center text-2xl font-black text-violet-600"
+                className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-center text-2xl font-mono font-bold text-gray-900"
               />
             </div>
-            <div className="flex-1">
-              <label className="block text-sm font-bold text-gray-600 mb-2 uppercase tracking-wide">
-                アラート基準
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
+                通知 (在庫)
               </label>
               <input
                 type="number"
                 min="0"
                 value={alertThreshold}
                 onChange={e => setAlertThreshold(e.target.value)}
-                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all text-center text-2xl font-black text-gray-900"
+                className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-center text-2xl font-mono font-bold text-rose-500"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
+                通知 (残量%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={alertThresholdPercent}
+                onChange={e => setAlertThresholdPercent(e.target.value)}
+                className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-center text-2xl font-mono font-bold text-amber-500"
               />
             </div>
           </div>
 
-          <div className="pt-4 pb-8 sm:pb-0">
+          <div className="pt-6 pb-4 sm:pb-0">
             <button
               type="submit"
-              className="w-full py-5 px-6 bg-violet-600 text-white text-lg font-black rounded-2xl shadow-xl shadow-violet-200 hover:bg-violet-700 active:scale-[0.97] transition-all tracking-tight"
+              className="w-full py-5 px-6 bg-gray-900 text-white text-lg font-black rounded-[1.5rem] shadow-2xl shadow-gray-200 hover:bg-black active:scale-[0.98] transition-all tracking-tight"
             >
-              登録する
+              {editItem ? 'Save Changes' : 'Add Item'}
             </button>
           </div>
         </form>

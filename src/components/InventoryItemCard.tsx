@@ -1,6 +1,6 @@
 import React from 'react';
 import { InventoryItem } from '../types';
-import { Minus, Plus, AlertCircle, Trash2, BoxSelect } from 'lucide-react';
+import { Minus, Plus, AlertCircle, Trash2, BoxSelect, Settings2, Archive } from 'lucide-react';
 
 interface InventoryItemCardProps {
   item: InventoryItem;
@@ -8,89 +8,122 @@ interface InventoryItemCardProps {
   onDecrement: (id: string) => void;
   onDelete: (id: string) => void;
   onOpen?: (id: string) => void;
+  onEdit?: (item: InventoryItem) => void;
+  onArchive?: (id: string) => void;
   onUpdateRemaining?: (id: string, amount: string) => void;
 }
 
-const REMAINING_OPTIONS = ['100%', '75%', '50%', '25%', 'ほぼ空'];
+export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, onIncrement, onDecrement, onDelete, onOpen, onEdit, onArchive, onUpdateRemaining }) => {
+  const isStockAlert = item.stock <= item.alertThreshold;
+  const isPercentAlert = item.isOpened && (item.remainingPercent ?? 100) <= (item.alertThresholdPercent ?? 20);
+  const isAlert = isStockAlert || isPercentAlert;
 
-export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, onIncrement, onDecrement, onDelete, onOpen, onUpdateRemaining }) => {
-  const isAlert = item.stock <= item.alertThreshold;
+  const handlePercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onUpdateRemaining) {
+      const val = parseInt(e.target.value);
+      onUpdateRemaining(item.id, val.toString()); // Passing as string for generic compatibility
+    }
+  };
 
   return (
-    <div className="group relative bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:shadow-violet-500/5 hover:border-violet-100 transition-all duration-300 flex flex-col min-h-[180px]">
+    <div className="group relative bg-white border border-gray-100 rounded-[2.5rem] p-6 shadow-sm hover:shadow-2xl hover:shadow-gray-200/50 hover:border-violet-100 transition-all duration-500 flex flex-col min-h-[220px]">
       
-      {/* Status Indicators Layer */}
-      <div className="absolute top-4 right-4 flex gap-2">
-        {item.isOpened && (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-100 whitespace-nowrap">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            開封済
-          </span>
-        )}
-        {isAlert && (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-full border border-rose-100 whitespace-nowrap animate-pulse">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            在庫僅少
-          </span>
-        )}
-        <button 
-          onClick={() => onDelete(item.id)}
-          className="p-1.5 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-          aria-label="削除"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-1 mb-6">
-        <h3 className="font-bold text-lg text-gray-900 tracking-tight leading-tight pr-20 line-clamp-1">
-          {item.name}
-        </h3>
-        <div className="flex items-center gap-3">
-          <span className="text-[11px] font-semibold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md">
-            {item.unit}
-          </span>
-          <span className="text-[10px] font-medium text-gray-300 tracking-wider">
-            閾値: {item.alertThreshold}
-          </span>
+      {/* Header Section: Title & Action Buttons */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1 min-w-0 pr-4">
+          <h3 className="font-black text-xl text-gray-900 tracking-tight leading-tight truncate">
+            {item.name}
+          </h3>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+              {item.unit}
+            </span>
+            <span className="text-[9px] font-bold text-gray-300 uppercase tracking-wider">
+              {item.alertThreshold}{item.unit} / {item.alertThresholdPercent ?? 20}%
+            </span>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-1 shrink-0">
+          <button 
+            onClick={() => {
+              console.log(`[UI_DEBUG] Editing item: ${item.name}`, item);
+              onEdit?.(item);
+            }}
+            className="p-2 text-gray-300 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all"
+            aria-label="編集"
+          >
+            <Settings2 className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => onDelete(item.id)}
+            className="p-2 text-gray-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+            aria-label="削除"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* Opened state: Remaining Amount Selector */}
-      {item.isOpened && onUpdateRemaining && (
-        <div className="mb-6">
-          <p className="text-[10px] font-bold text-gray-400 uppercase mb-2.5 tracking-widest">残り</p>
+      {/* Badges Section: Stacked below title to prevent overlap */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {item.isOpened && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-white text-[10px] font-black rounded-full shadow-lg shadow-amber-100 border border-amber-500 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            USING
+          </span>
+        )}
+        {isAlert && !item.isArchived && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-500 text-white text-[10px] font-black rounded-full shadow-lg shadow-rose-100 border border-rose-600 whitespace-nowrap animate-bounce">
+            <span className="w-1.5 h-1.5 rounded-full bg-white" />
+            {isPercentAlert ? 'ALMOST EMPTY' : 'LOW STOCK'}
+          </span>
+        )}
+        {item.isArchived && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-500 text-[10px] font-black rounded-full border border-gray-200 whitespace-nowrap uppercase tracking-widest">
+            COMPLETED
+          </span>
+        )}
+        {!item.isArchived && (item as any).isHistoryView && (
+           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-violet-50 text-violet-600 text-[10px] font-black rounded-full border border-violet-100 whitespace-nowrap uppercase tracking-widest">
+            IN STOCK
+          </span>
+        )}
+      </div>
+
+      {/* Opened state: Gauge Slider */}
+      {item.isOpened && !item.isArchived && onUpdateRemaining && (
+        <div className="mb-8">
+          <div className="flex justify-between items-end mb-3">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Remaining Amount</p>
+            <span className="text-xl font-mono font-black text-amber-600 leading-none">
+              {item.remainingPercent ?? 100}<span className="text-[10px] ml-0.5">%</span>
+            </span>
+          </div>
           
-          {['g', 'ml', 'グラム', 'ミリリットル'].includes(item.unit.toLowerCase()) ? (
-            <div className="relative flex items-center group/input">
-              <input
-                type="number"
-                value={parseInt(item.remainingAmount || '0') || ''}
-                onChange={(e) => onUpdateRemaining(item.id, e.target.value + item.unit)}
-                placeholder="0"
-                className="w-full bg-gray-50 px-4 py-2 rounded-xl text-sm font-mono font-bold text-gray-900 outline-none border border-transparent focus:border-amber-200 focus:bg-white transition-all text-right pr-12"
-              />
-              <span className="absolute right-4 text-[10px] font-bold text-gray-400">
-                {item.unit}
-              </span>
-            </div>
-          ) : (
-            <div className="flex gap-1">
-              {REMAINING_OPTIONS.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => opt !== item.remainingAmount && onUpdateRemaining(item.id, opt)}
-                  className={`flex-1 text-[10px] py-1.5 rounded-lg font-bold transition-all border ${
-                    item.remainingAmount === opt 
-                      ? 'bg-amber-500 text-white border-amber-600 shadow-sm' 
-                      : 'bg-white text-gray-500 border-gray-100 hover:border-amber-200 hover:text-amber-600'
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="relative h-4 bg-gray-50 rounded-full border border-gray-100 overflow-hidden group/gauge">
+            {/* Background progress bar */}
+            <div 
+              className={`absolute inset-y-0 left-0 transition-all duration-300 ${
+                (item.remainingPercent ?? 100) <= (item.alertThresholdPercent ?? 20) ? 'bg-rose-500' : 'bg-amber-400'
+              }`}
+              style={{ width: `${item.remainingPercent ?? 100}%` }}
+            />
+            {/* Invisible Range Slider for interaction */}
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={item.remainingPercent ?? 100}
+              onChange={handlePercentChange}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+          </div>
+          <div className="flex justify-between mt-1 px-1">
+            <span className="text-[8px] font-bold text-gray-300 uppercase">Empty</span>
+            <span className="text-[8px] font-bold text-gray-300 uppercase">Full</span>
+          </div>
         </div>
       )}
 
@@ -106,7 +139,7 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, onIn
         </div>
 
         <div className="flex items-center gap-2">
-          {item.stock > 0 && !item.isOpened && onOpen && (
+          {item.stock > 0 && !item.isOpened && !item.isArchived && onOpen && (
             <button
               onClick={() => onOpen(item.id)}
               className="mr-2 flex items-center justify-center p-2.5 bg-violet-50 text-violet-600 hover:bg-violet-100 rounded-xl transition-all"
@@ -116,27 +149,45 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({ item, onIn
             </button>
           )}
 
-          <div className="flex items-center p-1 bg-gray-50 rounded-2xl border border-gray-100">
-            <button
-              onClick={() => onDecrement(item.id)}
-              disabled={item.stock <= 0}
-              className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${
-                item.stock > 0 
-                  ? 'bg-white text-gray-700 shadow-sm hover:text-rose-600 active:scale-95' 
-                  : 'text-gray-300 cursor-not-allowed'
-              }`}
-              aria-label="消費"
+          {item.isOpened && !item.isArchived && onArchive && (
+             <button
+              onClick={() => onArchive(item.id)}
+              className="mr-2 flex items-center justify-center p-2.5 bg-gray-50 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+              title="ログに保存"
             >
-              <Minus className="w-4 h-4" strokeWidth={3} />
+              <Archive className="w-5 h-5" />
             </button>
-            <button
-              onClick={() => onIncrement(item.id)}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-violet-600 text-white shadow-lg shadow-violet-200 hover:bg-violet-700 active:scale-95 transition-all"
-              aria-label="追加"
-            >
-              <Plus className="w-4 h-4" strokeWidth={3} />
-            </button>
-          </div>
+          )}
+
+          {!item.isArchived && (
+            <div className="flex items-center gap-3 p-1 bg-gray-50 rounded-[2rem] border border-gray-100">
+              <button
+                onClick={() => onDecrement(item.id)}
+                disabled={item.stock <= 0}
+                className={`w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-full transition-all ${
+                  item.stock > 0 
+                    ? 'bg-white text-gray-700 shadow-sm hover:text-rose-600 active:scale-95' 
+                    : 'text-gray-300 cursor-not-allowed'
+                }`}
+                aria-label="消費"
+              >
+                <Minus className="w-5 h-5 md:w-4 md:h-4" strokeWidth={3} />
+              </button>
+              <button
+                onClick={() => onIncrement(item.id)}
+                className="w-12 h-12 md:w-10 md:h-10 flex items-center justify-center rounded-full bg-gray-900 text-white shadow-xl shadow-gray-200 hover:bg-black active:scale-95 transition-all"
+                aria-label="追加"
+              >
+                <Plus className="w-5 h-5 md:w-4 md:h-4" strokeWidth={3} />
+              </button>
+            </div>
+          )}
+
+          {item.isArchived && (
+            <div className="text-[10px] font-bold text-gray-300 uppercase tracking-widest px-2">
+              {item.archivedAt && new Date(item.archivedAt).toLocaleDateString()}
+            </div>
+          )}
         </div>
       </div>
     </div>

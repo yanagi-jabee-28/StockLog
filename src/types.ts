@@ -10,7 +10,31 @@ export interface InventoryItem {
   stock: number;
   unit: string;
   alertThreshold: number;
-  remainingAmount?: string; // e.g., "70%", "Half", "Almost gone"
+  alertThresholdPercent?: number; // threshold for opened items (0-100)
+  remainingAmount?: string; // e.g., "70", "Full", etc.
+  remainingPercent?: number; // numerical remaining percentage (0-100)
   isOpened?: boolean;
+  isArchived?: boolean;
+  archivedAt?: string;
+  createdAt: string;
   originalItemId?: string; // Links an opened item back to its original stock item
+}
+
+export type ActivityType = 
+  | 'added' 
+  | 'stock_up' 
+  | 'stock_down' 
+  | 'opened' 
+  | 'remaining_update' 
+  | 'archived' 
+  | 'deleted' 
+  | 'edited';
+
+export interface ActivityEntry {
+  id: string;
+  itemId: string;
+  itemName: string;
+  type: ActivityType;
+  timestamp: string;
+  details?: string;
 }
