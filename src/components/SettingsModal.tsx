@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X, Download, Upload, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { storage, DEFAULT_CATEGORIES } from '../lib/storage';
+import { useModalNavigation } from '../hooks/useModalNavigation';
 
 interface Props {
   isOpen: boolean;
@@ -10,6 +11,10 @@ interface Props {
 
 export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  
+  // Handle Escape key and mobile Back gesture
+  useModalNavigation(isOpen, onClose);
+
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

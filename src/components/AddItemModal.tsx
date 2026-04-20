@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Category, InventoryItem } from '../types';
 import { X, Search, BoxSelect, FileText } from 'lucide-react';
+import { useModalNavigation } from '../hooks/useModalNavigation';
 
 interface Props {
   isOpen: boolean;
@@ -22,6 +23,10 @@ const UNIT_GROUPS = [
 
 export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit, initialCategory, editItem, isDuplicate }: Props) {
   const [name, setName] = useState('');
+  
+  // Handle Escape key and mobile Back gesture
+  useModalNavigation(isOpen, onClose);
+
   const [categoryId, setCategoryId] = useState(initialCategory);
   const [stock, setStock] = useState('0');
   const [unit, setUnit] = useState('個');
@@ -150,6 +155,12 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
                 onChange={e => {
                   setName(e.target.value);
                   setShowSuggestions(true);
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Escape' && showSuggestions && suggestions.length > 0) {
+                    e.stopPropagation();
+                    setShowSuggestions(false);
+                  }
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay to allow click detection

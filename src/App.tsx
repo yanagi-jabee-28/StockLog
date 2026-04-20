@@ -19,6 +19,7 @@ import { InventoryItemCard } from './components/InventoryItemCard';
 import { AddItemModal } from './components/AddItemModal';
 import { SettingsModal } from './components/SettingsModal';
 import { InventoryItem, ActivityType } from './types';
+import { useModalNavigation } from './hooks/useModalNavigation';
 
 const formatJapaneseDateTime = (isoString: string) => {
   const date = new Date(isoString);
@@ -58,6 +59,9 @@ export default function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<{id: string, details: string} | null>(null);
+
+  // Handle Escape key and mobile Back gesture for activity edit
+  useModalNavigation(!!editingActivity, () => setEditingActivity(null));
 
   const handleEditItem = (item: InventoryItem) => {
     setIsDuplicateMode(false);
