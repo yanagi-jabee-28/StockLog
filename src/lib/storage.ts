@@ -4,6 +4,10 @@ const STORAGE_KEY_ITEMS = 'stocklog_items';
 const STORAGE_KEY_CATEGORIES = 'stocklog_categories';
 const STORAGE_KEY_ACTIVITIES = 'stocklog_activities';
 
+const LEGACY_CATEGORY_MIGRATION: Record<string, string> = {
+  stationery: 'daily',
+};
+
 export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'priority', name: '🚨 開封済・食べ物' },
   { id: 'priority_daily', name: '🧼 使用中・消耗品' },
@@ -13,15 +17,57 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'frozen', name: '❄️ 冷凍・ストック' },
   { id: 'pantry', name: '🧂 調味料・乾物' },
   { id: 'daily', name: '🧻 日用品・消耗品' },
+  { id: 'home_utility', name: '🛠️ 家電・住設消耗品' },
+  { id: 'emergency_stock', name: '🆘 防災備蓄' },
   { id: 'hobby', name: '🎨 趣味・ホビー' },
-  { id: 'stationery', name: '🖋️ 文具・事務用品' },
   { id: 'med_cosme', name: '💄 常備薬・コスメ' },
 ];
+
+const migrateCategoryId = (categoryId: string): string => {
+  return LEGACY_CATEGORY_MIGRATION[categoryId] || categoryId;
+};
+
+const normalizeCategories = (categories: Category[]): Category[] => {
+  const seen = new Set<string>();
+  const normalized = categories
+    .map(category => ({ ...category, id: migrateCategoryId(category.id) }))
+    .filter(category => {
+      if (seen.has(category.id)) return false;
+      seen.add(category.id);
+      return true;
+    });
+
+  for (const defaultCategory of DEFAULT_CATEGORIES) {
+    if (!seen.has(defaultCategory.id)) {
+      normalized.push(defaultCategory);
+      seen.add(defaultCategory.id);
+    }
+  }
+
+  return normalized;
+};
+
+const normalizeItems = (items: InventoryItem[]): InventoryItem[] => {
+  return items.map(item => {
+    const nextCategoryId = migrateCategoryId(item.categoryId);
+    if (nextCategoryId === item.categoryId) return item;
+    return { ...item, categoryId: nextCategoryId };
+  });
+};
 
 export const storage = {
   getItems: (): InventoryItem[] => {
     const data = localStorage.getItem(STORAGE_KEY_ITEMS);
-    return data ? JSON.parse(data) : [];
+    if (!data) return [];
+
+    const parsedItems: InventoryItem[] = JSON.parse(data);
+    const normalizedItems = normalizeItems(parsedItems);
+
+    if (JSON.stringify(parsedItems) !== JSON.stringify(normalizedItems)) {
+      localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(normalizedItems));
+    }
+
+    return normalizedItems;
   },
 
   setItems: (items: InventoryItem[]): void => {
@@ -30,7 +76,16 @@ export const storage = {
 
   getCategories: (): Category[] => {
     const data = localStorage.getItem(STORAGE_KEY_CATEGORIES);
-    return data ? JSON.parse(data) : DEFAULT_CATEGORIES;
+    if (!data) return DEFAULT_CATEGORIES;
+
+    const parsedCategories: Category[] = JSON.parse(data);
+    const normalizedCategories = normalizeCategories(parsedCategories);
+
+    if (JSON.stringify(parsedCategories) !== JSON.stringify(normalizedCategories)) {
+      localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(normalizedCategories));
+    }
+
+    return normalizedCategories;
   },
 
   setCategories: (categories: Category[]): void => {

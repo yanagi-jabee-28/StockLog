@@ -188,7 +188,7 @@ export function useInventory() {
       id: crypto.randomUUID(), 
       stock: newStock, // Ensure consistency from the start
       isOpened: true,
-      categoryId: ['daily', 'stationery', 'med_cosme', 'hobby'].includes(sourceItem.categoryId) ? 'priority_daily' : 'priority',
+      categoryId: ['daily', 'home_utility', 'emergency_stock', 'med_cosme', 'hobby'].includes(sourceItem.categoryId) ? 'priority_daily' : 'priority',
       remainingAmount: '100',
       remainingPercent: 100,
       originalItemId: sourceItem.id
