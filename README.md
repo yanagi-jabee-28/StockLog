@@ -3,6 +3,7 @@
 **StockLog** は、日々の備品や食材の管理を「もっと楽に、直感的に」することを目指した、個人向けの在庫管理アプリケーションです。
 
 公開サイト: https://yanagi-jabee-28.github.io/StockLog/
+GitHub: https://github.com/yanagi-jabee-28/StockLog
 
 ## 🌟 特徴
 
