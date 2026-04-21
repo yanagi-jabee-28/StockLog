@@ -4,15 +4,14 @@ import {
   Plus, 
   Boxes, 
   History, 
-  PlusCircle, 
-  MinusCircle, 
-  CheckCircle, 
-  BoxSelect, 
+  PlusCircle,
+  MinusCircle,
+  CheckCircle,
+  BoxSelect,
   Trash2, 
-  Gauge, 
+  Gauge,
   Settings2,
-  Clock,
-  Calendar
+  type LucideIcon
 } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { InventoryItemCard } from './components/InventoryItemCard';
@@ -20,6 +19,19 @@ import { AddItemModal } from './components/AddItemModal';
 import { SettingsModal } from './components/SettingsModal';
 import { InventoryItem, ActivityType } from './types';
 import { useModalNavigation } from './hooks/useModalNavigation';
+import { ACTIVITY_META, CATEGORY_IDS } from './constants';
+import { compareByExpiryThenName } from './lib/alerts';
+
+const ACTIVITY_ICONS: Record<ActivityType, LucideIcon> = {
+  added: Plus,
+  stock_up: PlusCircle,
+  stock_down: MinusCircle,
+  opened: BoxSelect,
+  remaining_update: Gauge,
+  archived: CheckCircle,
+  deleted: Trash2,
+  edited: Settings2,
+};
 
 const formatJapaneseDateTime = (isoString: string) => {
   const date = new Date(isoString);
@@ -52,7 +64,7 @@ export default function App() {
     reloadData
   } = useInventory();
   
-  const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || 'priority');
+  const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || CATEGORY_IDS.priority);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [isDuplicateMode, setIsDuplicateMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -98,15 +110,7 @@ export default function App() {
       return timeB - timeA;
     }
     
-    // 1. Sort by expiry date (earliest first)
-    if (a.expiryDate && b.expiryDate) {
-      return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
-    }
-    if (a.expiryDate) return -1; // a has date, b doesn't -> a comes first
-    if (b.expiryDate) return 1;  // b has date, a doesn't -> b comes first
-
-    // 2. Fallback to name
-    return a.name.localeCompare(b.name, 'ja');
+    return compareByExpiryThenName(a, b);
   });
 
   const handleClearActivities = () => {
@@ -122,32 +126,11 @@ export default function App() {
     }
   };
 
-  const getActivityIcon = (type: ActivityType) => {
-    switch (type) {
-      case 'added': return <Plus className="w-4 h-4 text-emerald-500" />;
-      case 'stock_up': return <PlusCircle className="w-4 h-4 text-blue-500" />;
-      case 'stock_down': return <MinusCircle className="w-4 h-4 text-orange-500" />;
-      case 'opened': return <BoxSelect className="w-4 h-4 text-violet-500" />;
-      case 'remaining_update': return <Gauge className="w-4 h-4 text-amber-500" />;
-      case 'archived': return <CheckCircle className="w-4 h-4 text-gray-500" />;
-      case 'deleted': return <Trash2 className="w-4 h-4 text-rose-500" />;
-      case 'edited': return <Settings2 className="w-4 h-4 text-indigo-500" />;
-      default: return <Clock className="w-4 h-4 text-gray-400" />;
-    }
-  };
-
-  const getActivityLabel = (type: ActivityType) => {
-    switch (type) {
-      case 'added': return '新規登録';
-      case 'stock_up': return '入荷 / 追加';
-      case 'stock_down': return '消費 / 減少';
-      case 'opened': return '使用開始';
-      case 'remaining_update': return '残量更新';
-      case 'archived': return '使い切り完了';
-      case 'deleted': return '削除';
-      case 'edited': return '情報更新';
-      default: return 'アクティビティ';
-    }
+  const getActivityMeta = (type: ActivityType) => {
+    return {
+      ...ACTIVITY_META[type],
+      Icon: ACTIVITY_ICONS[type],
+    };
   };
 
   return (
@@ -333,14 +316,16 @@ export default function App() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {activities.map((activity) => (
+                  {activities.map((activity) => {
+                    const meta = getActivityMeta(activity.type);
+                    return (
                     <div key={activity.id} className="relative pl-10 pb-6 group">
                       {/* Timeline Line */}
                       <div className="absolute left-[18px] top-4 bottom-0 w-px bg-gray-100 group-last:hidden" />
                       
                       {/* Timeline Dot */}
                       <div className="absolute left-0 top-1 p-2 bg-white rounded-xl border border-gray-100 shadow-sm z-10 group-hover:scale-110 transition-transform">
-                        {getActivityIcon(activity.type)}
+                        <meta.Icon className={`w-4 h-4 ${meta.iconClassName}`} />
                       </div>
 
                       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
@@ -364,7 +349,7 @@ export default function App() {
                               <Trash2 className="w-3 h-3" />
                             </button>
                             <span className="text-[9px] font-bold px-2 py-0.5 bg-gray-50 text-gray-400 rounded-md border border-gray-100 uppercase">
-                              {getActivityLabel(activity.type)}
+                              {meta.label}
                             </span>
                           </div>
                         </div>
@@ -372,7 +357,7 @@ export default function App() {
                         <p className="text-xs text-gray-500">{activity.details}</p>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               )}
             </div>

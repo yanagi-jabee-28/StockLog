@@ -1,27 +1,13 @@
 import { Category, InventoryItem, ActivityEntry } from '../types';
+import { CATEGORY_IDS, DEFAULT_CATEGORIES } from '../constants';
 
 const STORAGE_KEY_ITEMS = 'stocklog_items';
 const STORAGE_KEY_CATEGORIES = 'stocklog_categories';
 const STORAGE_KEY_ACTIVITIES = 'stocklog_activities';
 
 const LEGACY_CATEGORY_MIGRATION: Record<string, string> = {
-  stationery: 'daily',
+  stationery: CATEGORY_IDS.daily,
 };
-
-export const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'priority', name: '🚨 開封済・食べ物' },
-  { id: 'priority_daily', name: '🧼 使用中・消耗品' },
-  { id: 'beverages', name: '🥤 飲料・ドリンク' },
-  { id: 'grocery', name: '🛒 生鮮・買い出し品' },
-  { id: 'prepped', name: '🍱 作り置き・お弁当' },
-  { id: 'frozen', name: '❄️ 冷凍・ストック' },
-  { id: 'pantry', name: '🧂 調味料・乾物' },
-  { id: 'daily', name: '🧻 日用品・消耗品' },
-  { id: 'home_utility', name: '🛠️ 家電・住設消耗品' },
-  { id: 'emergency_stock', name: '🆘 防災備蓄' },
-  { id: 'hobby', name: '🎨 趣味・ホビー' },
-  { id: 'med_cosme', name: '💄 常備薬・コスメ' },
-];
 
 const migrateCategoryId = (categoryId: string): string => {
   return LEGACY_CATEGORY_MIGRATION[categoryId] || categoryId;

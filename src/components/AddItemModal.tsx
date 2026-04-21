@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Category, InventoryItem } from '../types';
 import { X, Search, BoxSelect, FileText } from 'lucide-react';
 import { useModalNavigation } from '../hooks/useModalNavigation';
+import { isExpiryCategoryId } from '../constants';
 
 interface Props {
   isOpen: boolean;
@@ -90,7 +91,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
 
   if (!isOpen) return null;
 
-  const showsExpiry = ['priority', 'beverages', 'grocery', 'frozen', 'pantry', 'med_cosme', 'prepped'].includes(categoryId);
+  const showsExpiry = isExpiryCategoryId(categoryId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

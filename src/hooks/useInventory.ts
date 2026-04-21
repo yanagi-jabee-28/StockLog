@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { InventoryItem, Category, ActivityEntry } from '../types';
 import { storage } from '../lib/storage';
+import { CATEGORY_IDS, isOpenedDailyCategoryId } from '../constants';
+import {
+  setStockForGroupByRoot,
+  setStockForGroupByTarget,
+  updateItemWithGroupSync,
+} from '../lib/itemSync';
 
 export function useInventory() {
   const [items, setItemsState] = useState<InventoryItem[]>([]);
@@ -41,33 +47,10 @@ export function useInventory() {
   const updateItem = useCallback((id: string, updates: Partial<InventoryItem>) => {
     const target = items.find(i => i.id === id);
     if (!target) return;
-
-    const originalId = target.isOpened ? target.originalItemId : target.id;
     
     console.log(`[UPDATE_SYNC] Updating item group for: ${target.name}`, updates);
 
-    const newItems = items.map(item => {
-      // 1. Match the direct target
-      if (item.id === id) return { ...item, ...updates };
-
-      // 2. Sync linked items (Only sync non-instance fields)
-      // We don't want to sync 'isOpened' or 'remainingPercent' back to original
-      const syncableUpdates = { ...updates };
-      delete syncableUpdates.isOpened;
-      delete syncableUpdates.remainingPercent;
-      delete syncableUpdates.remainingAmount;
-      delete syncableUpdates.id;
-
-      if (originalId && (item.id === originalId || item.originalItemId === originalId)) {
-        return { ...item, ...syncableUpdates };
-      }
-
-      if (!target.isOpened && item.originalItemId === id) {
-        return { ...item, ...syncableUpdates };
-      }
-
-      return item;
-    });
+    const newItems = updateItemWithGroupSync(items, id, updates);
 
     saveItems(newItems);
     
@@ -89,26 +72,10 @@ export function useInventory() {
     if (!target) return;
     
     const newStock = target.stock + 1;
-    const originalId = target.isOpened ? target.originalItemId : target.id;
 
     console.log(`[STOCK_SYNC] Incrementing stock for ${target.name}. New total: ${newStock}`);
 
-    const newItems = items.map(item => {
-      // 1. Direct match
-      if (item.id === id) return { ...item, stock: newStock };
-      
-      // 2. If target is opened, sync original and all other clones
-      if (originalId && (item.id === originalId || item.originalItemId === originalId)) {
-        return { ...item, stock: newStock };
-      }
-      
-      // 3. If target is original, sync all clones
-      if (!target.isOpened && item.originalItemId === id) {
-        return { ...item, stock: newStock };
-      }
-      
-      return item;
-    });
+    const newItems = setStockForGroupByTarget(items, id, newStock);
     saveItems(newItems);
     storage.addActivity({
       itemId: id,
@@ -124,25 +91,10 @@ export function useInventory() {
     if (!target || target.stock <= 0) return;
     
     const newStock = Math.max(0, target.stock - 1);
-    const originalId = target.isOpened ? target.originalItemId : target.id;
 
     console.log(`[STOCK_SYNC] Decrementing stock for ${target.name}. New total: ${newStock}`);
 
-    const newItems = items.map(item => {
-      // 1. Direct match
-      if (item.id === id) return { ...item, stock: newStock };
-      
-      // 2. Sync group logic
-      if (originalId && (item.id === originalId || item.originalItemId === originalId)) {
-        return { ...item, stock: newStock };
-      }
-
-      if (!target.isOpened && item.originalItemId === id) {
-        return { ...item, stock: newStock };
-      }
-      
-      return item;
-    });
+    const newItems = setStockForGroupByTarget(items, id, newStock);
     saveItems(newItems);
     storage.addActivity({
       itemId: id,
@@ -173,14 +125,7 @@ export function useInventory() {
     if (!sourceItem || sourceItem.stock <= 0) return;
     
     const newStock = sourceItem.stock - 1;
-    
-    // 1. Update existing items in the pool
-    const updatedPool = items.map(item => {
-      if (item.id === id || item.originalItemId === id) {
-        return { ...item, stock: newStock };
-      }
-      return item;
-    });
+    const updatedPool = setStockForGroupByTarget(items, id, newStock);
 
     // 2. Create a NEW unique item instance for the "Opened" version
     const openedItem: InventoryItem = {
@@ -188,7 +133,7 @@ export function useInventory() {
       id: crypto.randomUUID(), 
       stock: newStock, // Ensure consistency from the start
       isOpened: true,
-      categoryId: ['daily', 'home_utility', 'emergency_stock', 'med_cosme', 'hobby'].includes(sourceItem.categoryId) ? 'priority_daily' : 'priority',
+      categoryId: isOpenedDailyCategoryId(sourceItem.categoryId) ? CATEGORY_IDS.priorityDaily : CATEGORY_IDS.priority,
       remainingAmount: '100',
       remainingPercent: 100,
       originalItemId: sourceItem.id
@@ -235,13 +180,8 @@ export function useInventory() {
     const originalItem = items.find(i => i.id === target.originalItemId);
     const newStock = (originalItem?.stock ?? target.stock) + 1;
 
-    // 1. Update original and other clones
-    const updatedPool = items.filter(item => item.id !== id).map(item => {
-      if (item.id === target.originalItemId || item.originalItemId === target.originalItemId) {
-        return { ...item, stock: newStock };
-      }
-      return item;
-    });
+    const itemPool = items.filter(item => item.id !== id);
+    const updatedPool = setStockForGroupByRoot(itemPool, target.originalItemId, newStock);
 
     saveItems(updatedPool);
     storage.addActivity({

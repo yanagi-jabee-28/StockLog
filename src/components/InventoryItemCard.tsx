@@ -1,23 +1,7 @@
 import React from 'react';
 import { InventoryItem } from '../types';
 import { Minus, Plus, Trash2, BoxSelect, Settings2, Archive, RotateCcw, Calendar, Copy, FileText } from 'lucide-react';
-
-const getExpiryStatus = (expiryDate?: string) => {
-  if (!expiryDate) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const expiry = new Date(expiryDate);
-  expiry.setHours(0, 0, 0, 0);
-  
-  const diffTime = expiry.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays < 0) return { label: `期限切れ (${Math.abs(diffDays)}日経過)`, color: 'text-rose-600', isCritical: true };
-  if (diffDays === 0) return { label: '今日が期限', color: 'text-rose-500', isCritical: true };
-  if (diffDays <= 3) return { label: `あと${diffDays}日`, color: 'text-rose-500', isCritical: true };
-  if (diffDays <= 7) return { label: `あと${diffDays}日`, color: 'text-amber-500', isCritical: false };
-  return { label: `あと${diffDays}日`, color: 'text-gray-400', isCritical: false };
-};
+import { getItemAlertState } from '../lib/alerts';
 
 interface InventoryItemCardProps {
   item: InventoryItem;
@@ -44,10 +28,7 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({
   onArchive, 
   onUpdateRemaining 
 }) => {
-  const isStockAlert = item.stock <= item.alertThreshold;
-  const isPercentAlert = item.isOpened && (item.remainingPercent ?? 100) <= (item.alertThresholdPercent ?? 20);
-  const expiryStatus = getExpiryStatus(item.expiryDate);
-  const isAlert = isStockAlert || isPercentAlert || (expiryStatus?.isCritical ?? false);
+  const { isPercentAlert, expiryStatus, isAlert } = getItemAlertState(item);
 
   const handlePercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onUpdateRemaining) {

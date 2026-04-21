@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X, Download, Upload, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
-import { storage, DEFAULT_CATEGORIES } from '../lib/storage';
+import { storage } from '../lib/storage';
+import { DEFAULT_CATEGORIES } from '../constants';
 import { useModalNavigation } from '../hooks/useModalNavigation';
 
 interface Props {
