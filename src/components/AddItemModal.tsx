@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { Category, InventoryItem } from '../types';
 import { X, Search, BoxSelect, FileText } from 'lucide-react';
 import { useModalNavigation } from '../hooks/useModalNavigation';
@@ -65,7 +65,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
     setShowSuggestions(false);
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isOpen) {
       if (editItem) {
         setName(editItem.name);
