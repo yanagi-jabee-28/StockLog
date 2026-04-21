@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useLayoutEffect, useMemo } from 'react';
 import { Category, InventoryItem } from '../types';
 import { X, Search, BoxSelect, FileText } from 'lucide-react';
 import { useModalNavigation } from '../hooks/useModalNavigation';
@@ -31,6 +31,9 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
   const [categoryId, setCategoryId] = useState(initialCategory);
   const [stock, setStock] = useState('0');
   const [unit, setUnit] = useState('個');
+  const [purchasePrice, setPurchasePrice] = useState('');
+  const [contentAmount, setContentAmount] = useState('');
+  const [contentUnit, setContentUnit] = useState('個');
   const [alertThreshold, setAlertThreshold] = useState('1');
   const [alertThresholdPercent, setAlertThresholdPercent] = useState('20');
   const [expiryDate, setExpiryDate] = useState('');
@@ -65,6 +68,15 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
     setShowSuggestions(false);
   };
 
+  const getUnitPrice = () => {
+    const price = parseFloat(purchasePrice);
+    const amount = parseFloat(contentAmount);
+
+    if (!Number.isFinite(price) || price <= 0) return null;
+    if (!Number.isFinite(amount) || amount <= 0) return price;
+    return Math.round((price / amount) * 100) / 100;
+  };
+
   useLayoutEffect(() => {
     if (isOpen) {
       if (editItem) {
@@ -72,6 +84,9 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
         setCategoryId(editItem.categoryId);
         setStock(editItem.stock.toString());
         setUnit(editItem.unit);
+        setPurchasePrice(editItem.purchasePrice?.toString() || '');
+        setContentAmount(editItem.contentAmount?.toString() || '');
+        setContentUnit(editItem.contentUnit || editItem.unit);
         setAlertThreshold(editItem.alertThreshold.toString());
         setAlertThresholdPercent((editItem.alertThresholdPercent ?? 20).toString());
         setExpiryDate(editItem.expiryDate || '');
@@ -81,6 +96,9 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
         setCategoryId(initialCategory);
         setStock('0');
         setUnit('個');
+        setPurchasePrice('');
+        setContentAmount('');
+        setContentUnit('個');
         setAlertThreshold('1');
         setAlertThresholdPercent('20');
         setExpiryDate('');
@@ -102,6 +120,21 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
       categoryId,
       stock: parseInt(stock) || 0,
       unit: unit.trim() || '個',
+      purchasePrice: purchasePrice.trim() ? Math.max(0, parseFloat(purchasePrice) || 0) : undefined,
+      contentAmount: contentAmount.trim() ? Math.max(0, parseFloat(contentAmount) || 0) : undefined,
+      contentUnit: contentAmount.trim() ? (contentUnit.trim() || unit.trim() || '個') : undefined,
+      pricePerUnit: getUnitPrice() ?? undefined,
+      lowestPricePerUnit: getUnitPrice() ?? undefined,
+      priceHistory: purchasePrice.trim()
+        ? [{
+            timestamp: new Date().toISOString(),
+            purchasePrice: Math.max(0, parseFloat(purchasePrice) || 0),
+            contentAmount: contentAmount.trim() ? Math.max(0, parseFloat(contentAmount) || 0) : undefined,
+            contentUnit: contentAmount.trim() ? (contentUnit.trim() || unit.trim() || '個') : undefined,
+            pricePerUnit: getUnitPrice() ?? 0,
+            notes: notes.trim() || undefined,
+          }]
+        : [],
       alertThreshold: parseInt(alertThreshold) || 0,
       alertThresholdPercent: parseInt(alertThresholdPercent) || 20,
       expiryDate: expiryDate || undefined,
@@ -246,6 +279,66 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-4 rounded-[1.5rem] border border-gray-100 bg-gray-50/70 p-5">
+            <div className="flex items-center justify-between gap-3">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">
+                価格情報
+              </label>
+              {getUnitPrice() !== null && (
+                <span className="text-[10px] font-black text-violet-600 uppercase tracking-wider">
+                  単価 ¥{getUnitPrice()}
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
+                  購入価格
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={purchasePrice}
+                  onChange={e => setPurchasePrice(e.target.value)}
+                  className="w-full px-5 py-4 bg-white border border-gray-100 rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-right text-xl font-mono font-bold text-gray-900"
+                  placeholder="例: 298"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
+                    内容量
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={contentAmount}
+                    onChange={e => setContentAmount(e.target.value)}
+                    className="w-full px-5 py-4 bg-white border border-gray-100 rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-right text-xl font-mono font-bold text-gray-900"
+                    placeholder="例: 500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
+                    単位
+                  </label>
+                  <input
+                    type="text"
+                    value={contentUnit}
+                    onChange={e => setContentUnit(e.target.value)}
+                    className="w-full px-5 py-4 bg-white border border-gray-100 rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-center text-xl font-mono font-bold text-gray-900"
+                    placeholder="g"
+                  />
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] font-medium text-gray-400 leading-relaxed">
+              購入価格と内容量を入れると、単価を自動で計算します。最安値はこの単価で比較します。
+            </p>
           </div>
 
           {showsExpiry && (

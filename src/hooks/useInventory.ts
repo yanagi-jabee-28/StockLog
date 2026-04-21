@@ -7,6 +7,45 @@ import {
   setStockForGroupByTarget,
   updateItemWithGroupSync,
 } from '../lib/itemSync';
+import { buildPriceHistoryEntry, normalizePriceItem } from '../lib/price';
+
+const withPriceMetadata = (item: InventoryItem): InventoryItem => normalizePriceItem(item);
+
+const appendPriceHistoryIfNeeded = (
+  currentItem: InventoryItem,
+  updates: Partial<InventoryItem>
+): Partial<InventoryItem> => {
+  const priceFieldsChanged = [
+    'purchasePrice',
+    'contentAmount',
+    'contentUnit',
+    'pricePerUnit',
+  ].some(key => key in updates);
+
+  if (!priceFieldsChanged) {
+    return updates;
+  }
+
+  const priceHistory = currentItem.priceHistory ? [...currentItem.priceHistory] : [];
+  const entry = buildPriceHistoryEntry({
+    createdAt: currentItem.createdAt,
+    notes: updates.notes ?? currentItem.notes,
+    purchasePrice: updates.purchasePrice ?? currentItem.purchasePrice,
+    contentAmount: updates.contentAmount ?? currentItem.contentAmount,
+    contentUnit: updates.contentUnit ?? currentItem.contentUnit,
+    pricePerUnit: updates.pricePerUnit ?? currentItem.pricePerUnit,
+    priceNotes: typeof updates.notes === 'string' ? updates.notes : undefined,
+  });
+
+  if (!entry) {
+    return updates;
+  }
+
+  return {
+    ...updates,
+    priceHistory: [entry, ...priceHistory],
+  };
+};
 
 export function useInventory() {
   const [items, setItemsState] = useState<InventoryItem[]>([]);
@@ -14,7 +53,7 @@ export function useInventory() {
   const [activities, setActivitiesState] = useState<ActivityEntry[]>([]);
 
   useEffect(() => {
-    setItemsState(storage.getItems());
+    setItemsState(storage.getItems().map(withPriceMetadata));
     setCategoriesState(storage.getCategories());
     setActivitiesState(storage.getActivities());
   }, []);
@@ -34,7 +73,7 @@ export function useInventory() {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString()
     };
-    saveItems([...items, newItem]);
+    saveItems([...items, withPriceMetadata(newItem)]);
     storage.addActivity({
       itemId: newItem.id,
       itemName: newItem.name,
@@ -50,9 +89,10 @@ export function useInventory() {
     
     console.log(`[UPDATE_SYNC] Updating item group for: ${target.name}`, updates);
 
-    const newItems = updateItemWithGroupSync(items, id, updates);
+    const priceAwareUpdates = appendPriceHistoryIfNeeded(target, updates);
+    const newItems = updateItemWithGroupSync(items, id, priceAwareUpdates);
 
-    saveItems(newItems);
+    saveItems(newItems.map(withPriceMetadata));
     
     // Log as edit if not just a remaining update via sync
     const keys = Object.keys(updates);
@@ -139,7 +179,7 @@ export function useInventory() {
       originalItemId: sourceItem.id
     };
 
-    saveItems([...updatedPool, openedItem]);
+    saveItems([...updatedPool, withPriceMetadata(openedItem)]);
     storage.addActivity({
       itemId: id,
       itemName: sourceItem.name,
@@ -223,7 +263,7 @@ export function useInventory() {
   }, [refreshActivities]);
 
   const reloadData = useCallback(() => {
-    setItemsState(storage.getItems());
+    setItemsState(storage.getItems().map(withPriceMetadata));
     setCategoriesState(storage.getCategories());
     setActivitiesState(storage.getActivities());
   }, []);

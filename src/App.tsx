@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Settings, 
   Plus, 
@@ -94,11 +94,15 @@ export default function App() {
     setIsDuplicateMode(false);
   };
 
-  // If categories finish loading asynchronously and active is out of sync, set it safely
-  // We allow 'history' as a special virtual category ID
-  if (categories.length > 0 && activeCategoryId !== 'history' && !categories.find(c => c.id === activeCategoryId)) {
-    setActiveCategoryId(categories[0].id);
-  }
+  useEffect(() => {
+    if (categories.length === 0) return;
+    if (activeCategoryId === 'history') return;
+
+    const isValidCategory = categories.some((category) => category.id === activeCategoryId);
+    if (!isValidCategory) {
+      setActiveCategoryId(categories[0].id);
+    }
+  }, [categories, activeCategoryId]);
 
   const filteredItems = items.filter(item => {
     if (activeCategoryId === 'history') return true; // Show ALL in history

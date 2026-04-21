@@ -1,5 +1,6 @@
 import { Category, InventoryItem, ActivityEntry } from '../types';
 import { CATEGORY_IDS, DEFAULT_CATEGORIES } from '../constants';
+import { normalizePriceItem } from './price';
 
 const STORAGE_KEY_ITEMS = 'stocklog_items';
 const STORAGE_KEY_CATEGORIES = 'stocklog_categories';
@@ -35,9 +36,12 @@ const normalizeCategories = (categories: Category[]): Category[] => {
 
 const normalizeItems = (items: InventoryItem[]): InventoryItem[] => {
   return items.map(item => {
-    const nextCategoryId = migrateCategoryId(item.categoryId);
-    if (nextCategoryId === item.categoryId) return item;
-    return { ...item, categoryId: nextCategoryId };
+    const migratedItem = {
+      ...item,
+      categoryId: migrateCategoryId(item.categoryId),
+    };
+
+    return normalizePriceItem(migratedItem);
   });
 };
 
@@ -138,7 +142,7 @@ export const storage = {
     const activities = storage.getActivities();
     
     const data = {
-      version: '1.0.0',
+      version: '1.1.0',
       appName: 'StockLog',
       exportDate: new Date().toISOString(),
       data: {
@@ -164,11 +168,12 @@ export const storage = {
       }
 
       // Basic validation and sanitization
-      const sanitizedItems = items.map(item => ({
+      const sanitizedItems = items.map(item => normalizePriceItem({
         ...item,
         stock: Math.max(0, item.stock || 0),
         isOpened: !!item.isOpened,
         isArchived: !!item.isArchived,
+        categoryId: migrateCategoryId(item.categoryId),
       }));
 
       storage.setItems(sanitizedItems);

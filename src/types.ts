@@ -3,6 +3,15 @@ export interface Category {
   name: string;
 }
 
+export interface PriceHistoryEntry {
+  timestamp: string;
+  purchasePrice: number;
+  contentAmount?: number;
+  contentUnit?: string;
+  pricePerUnit: number;
+  notes?: string;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -20,6 +29,12 @@ export interface InventoryItem {
   originalItemId?: string; // Links an opened item back to its original stock item
   expiryDate?: string; // Optional expiry/best-before date
   notes?: string; // Optional notes or remarks
+  purchasePrice?: number;
+  contentAmount?: number;
+  contentUnit?: string;
+  pricePerUnit?: number;
+  lowestPricePerUnit?: number;
+  priceHistory?: PriceHistoryEntry[];
 }
 
 export type ActivityType = 
