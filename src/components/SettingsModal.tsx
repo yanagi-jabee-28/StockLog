@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Download, Upload, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { X, Download, Upload, CheckCircle2, AlertCircle, RefreshCw, Github } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { DEFAULT_CATEGORIES } from '../constants';
 import { useModalNavigation } from '../hooks/useModalNavigation';
@@ -190,17 +190,28 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
           <div className="pt-8 border-t border-gray-50 flex flex-col items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="h-[1px] w-4 bg-gray-100" />
-              <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">Build with</p>
+              <p className="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">Links</p>
               <div className="h-[1px] w-4 bg-gray-100" />
             </div>
-            <a 
-              href="https://ai.studio/apps/cf93f8bf-7fd1-41ca-9a7c-e8395e8891e8" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 text-white rounded-full text-[10px] font-black shadow-lg shadow-gray-200 hover:bg-black transition-all"
-            >
-              Google AI Studio
-            </a>
+            <div className="flex flex-col items-center gap-2">
+              <a 
+                href="https://github.com/yanagi-jabee-28/StockLog" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 text-white rounded-full text-[10px] font-black shadow-lg shadow-gray-200 hover:bg-black transition-all"
+              >
+                <Github className="w-3.5 h-3.5" />
+                GitHub Repository
+              </a>
+              <a 
+                href="https://ai.studio/apps/cf93f8bf-7fd1-41ca-9a7c-e8395e8891e8" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-full text-[10px] font-black hover:bg-gray-200 transition-all"
+              >
+                Google AI Studio
+              </a>
+            </div>
           </div>
         </div>
       </div>
