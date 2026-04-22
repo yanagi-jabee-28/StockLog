@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Download, Upload, CheckCircle2, AlertCircle, RefreshCw, Github } from 'lucide-react';
 import { storage } from '../lib/storage';
-import { DEFAULT_CATEGORIES } from '../constants';
 import { useModalNavigation } from '../hooks/useModalNavigation';
 
 interface Props {
@@ -68,8 +67,7 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
   };
 
   const handleReset = () => {
-    storage.clearAppData();
-    storage.setCategories(DEFAULT_CATEGORIES);
+    storage.resetToDefaults();
     onDataImported();
     setImportStatus('success');
     setShowResetConfirm(false);

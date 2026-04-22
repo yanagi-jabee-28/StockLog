@@ -6,6 +6,7 @@ const STORAGE_KEY_ITEMS = 'stocklog_items';
 const STORAGE_KEY_CATEGORIES = 'stocklog_categories';
 const STORAGE_KEY_ACTIVITIES = 'stocklog_activities';
 const APP_STORAGE_KEYS = [STORAGE_KEY_ITEMS, STORAGE_KEY_CATEGORIES, STORAGE_KEY_ACTIVITIES] as const;
+const DEFAULT_CATEGORY_ID_SET = new Set(DEFAULT_CATEGORIES.map(category => category.id));
 
 const safeParse = <T>(key: string, fallback: T): T => {
   const raw = localStorage.getItem(key);
@@ -42,6 +43,7 @@ const normalizeCategories = (categories: Category[]): Category[] => {
   const normalized = categories
     .map(category => ({ ...category, id: migrateCategoryId(category.id) }))
     .filter(category => {
+      if (!DEFAULT_CATEGORY_ID_SET.has(category.id)) return false;
       if (seen.has(category.id)) return false;
       seen.add(category.id);
       return true;
@@ -152,6 +154,13 @@ export const storage = {
     for (const key of APP_STORAGE_KEYS) {
       localStorage.removeItem(key);
     }
+  },
+
+  resetToDefaults: (): void => {
+    storage.clearAppData();
+    storage.setItems([]);
+    storage.setCategories(DEFAULT_CATEGORIES);
+    storage.clearActivities();
   },
 
   repairData: (): void => {
