@@ -200,6 +200,8 @@ export default function App() {
     }
   };
 
+  const showAddItemButton = activeCategoryId !== 'history';
+
   const getActivityMeta = (type: ActivityType) => {
     return {
       ...ACTIVITY_META[type],
@@ -346,13 +348,15 @@ export default function App() {
                 {activeCategoryId === 'history' ? 'History Log' : categories.find(c => c.id === activeCategoryId)?.name}
               </h2>
             </div>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-2xl font-bold shadow-2xl shadow-gray-200/50 transition-all active:scale-95"
-            >
-              <Plus className="w-5 h-5" />
-              アイテムを追加
-            </button>
+            {showAddItemButton && (
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex items-center gap-2 bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-2xl font-bold shadow-2xl shadow-gray-200/50 transition-all active:scale-95"
+              >
+                <Plus className="w-5 h-5" />
+                アイテムを追加
+              </button>
+            )}
           </div>
 
           {activeCategoryId === 'history' ? (
@@ -588,22 +592,24 @@ export default function App() {
       </main>
 
       {/* Floating Action Button (Mobile Only) */}
-      <div className="md:hidden fixed bottom-6 right-6 z-40">
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-gray-900 text-white w-14 h-14 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.2)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all outline-none"
-          aria-label="アイテムを追加"
-        >
-          <Plus className="w-7 h-7" />
-        </button>
-      </div>
+      {showAddItemButton && (
+        <div className="md:hidden fixed bottom-6 right-6 z-40">
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="bg-gray-900 text-white w-14 h-14 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.2)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all outline-none"
+            aria-label="アイテムを追加"
+          >
+            <Plus className="w-7 h-7" />
+          </button>
+        </div>
+      )}
 
       {/* Modals */}
       {deleteConfirmState && (
         <div
           className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setDeleteConfirmState(null)}
         >
+          <div className="absolute inset-0" aria-hidden="true" />
           <div
             className="bg-white rounded-t-[2rem] sm:rounded-3xl p-7 sm:p-8 w-full sm:max-w-md shadow-2xl animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}
@@ -642,7 +648,8 @@ export default function App() {
       )}
 
       {editingActivity && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setEditingActivity(null)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="absolute inset-0" aria-hidden="true" />
           <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-black text-gray-900 mb-6 tracking-tight">履歴を編集</h3>
             <form onSubmit={handleEditActivitySubmit} className="space-y-6">

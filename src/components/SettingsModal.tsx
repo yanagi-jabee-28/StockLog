@@ -119,7 +119,7 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="absolute inset-0" onClick={onClose} />
+      <div className="absolute inset-0" aria-hidden="true" />
       
       <div className="relative w-full max-w-sm bg-white rounded-[2.5rem] p-8 md:p-10 shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex items-start justify-between mb-10">
@@ -129,9 +129,10 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
           </div>
           <button 
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center text-gray-300 rounded-full hover:bg-gray-50 transition-colors"
+            aria-label="閉じる"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 text-white shadow-lg shadow-gray-200 border border-gray-800 hover:bg-black hover:scale-105 transition-all focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
