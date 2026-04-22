@@ -71,6 +71,7 @@ const LEGACY_CATEGORY_MIGRATION: Record<string, string> = {
   priority: CATEGORY_IDS.fresh,
   priority_daily: CATEGORY_IDS.daily,
   beverages: CATEGORY_IDS.beverage,
+  cosmetics: CATEGORY_IDS.beauty,
   grocery: CATEGORY_IDS.fresh,
   prepped: CATEGORY_IDS.fresh,
   home_utility: CATEGORY_IDS.utility,

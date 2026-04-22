@@ -7,6 +7,7 @@ export const CATEGORY_IDS = {
   pantry: 'pantry',
   beverage: 'beverage',
   daily: 'daily',
+  beauty: 'beauty',
   utility: 'utility',
   furniture: 'furniture',
   emergency: 'emergency',
@@ -25,6 +26,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: CATEGORY_IDS.pantry, name: '🍘 乾物・保存食' },
   { id: CATEGORY_IDS.beverage, name: '🥤 飲料・嗜好品' },
   { id: CATEGORY_IDS.daily, name: '🧻 日用消耗品' },
+  { id: CATEGORY_IDS.beauty, name: '💄 コスメ・美容ケア' },
   { id: CATEGORY_IDS.utility, name: '🔧 住設・家電消耗品' },
   { id: CATEGORY_IDS.furniture, name: '🪑 家具・インテリア' },
   { id: CATEGORY_IDS.emergency, name: '🧰 防災・備蓄' },
@@ -36,7 +38,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: CATEGORY_IDS.hobby, name: '🎨 趣味・探求' },
 ];
 
-export const APP_LAST_UPDATED = '2026/04/22 10:30';
+export const APP_LAST_UPDATED = '2026/04/23 09:42';
 
 export const EXPIRY_CATEGORY_IDS = [
   CATEGORY_IDS.fresh,
@@ -56,6 +58,7 @@ export const isExpiryCategoryId = (categoryId: string): boolean => {
 
 export const OPENED_DAILY_CATEGORY_IDS = [
   CATEGORY_IDS.daily,
+  CATEGORY_IDS.beauty,
   CATEGORY_IDS.utility,
   CATEGORY_IDS.emergency,
   CATEGORY_IDS.healthcare,

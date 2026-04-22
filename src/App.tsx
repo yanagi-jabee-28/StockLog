@@ -4,6 +4,7 @@ import {
   Plus, 
   Boxes, 
   History, 
+  Grid2x2,
   PlusCircle,
   MinusCircle,
   CheckCircle,
@@ -70,6 +71,7 @@ export default function App() {
   const [isDuplicateMode, setIsDuplicateMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<{id: string, details: string} | null>(null);
   const [deleteConfirmState, setDeleteConfirmState] = useState<{
@@ -80,6 +82,7 @@ export default function App() {
   // Handle Escape key and mobile Back gesture for activity edit
   useModalNavigation(!!editingActivity, () => setEditingActivity(null));
   useModalNavigation(!!deleteConfirmState, () => setDeleteConfirmState(null));
+  useModalNavigation(isCategoryPickerOpen, () => setIsCategoryPickerOpen(false));
 
   const handleEditItem = (item: InventoryItem) => {
     setIsDuplicateMode(false);
@@ -323,6 +326,18 @@ export default function App() {
           最終更新 {APP_LAST_UPDATED}
         </p>
 
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">カテゴリ</p>
+          <button
+            onClick={() => setIsCategoryPickerOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-600 shadow-sm"
+            aria-label="カテゴリ一覧を開く"
+          >
+            <Grid2x2 className="w-3 h-3" />
+            一覧表示
+          </button>
+        </div>
+
         <div className="flex overflow-x-auto hide-scrollbar gap-2 -mx-6 px-6 pb-2">
           {categories.map((category) => (
             <button
@@ -350,6 +365,69 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      {isCategoryPickerOpen && (
+        <div className="md:hidden fixed inset-0 z-[55] flex items-end justify-center bg-black/45 backdrop-blur-sm p-0">
+          <div
+            className="absolute inset-0"
+            aria-hidden="true"
+            onClick={() => setIsCategoryPickerOpen(false)}
+          />
+          <div className="relative z-10 w-full rounded-t-[2rem] bg-white shadow-2xl animate-in slide-in-from-bottom-8 duration-200">
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+              <div>
+                <h3 className="text-lg font-black text-gray-900 tracking-tight">カテゴリ一覧</h3>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">タップで切り替え</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCategoryPickerOpen(false)}
+                className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 font-black"
+                aria-label="カテゴリ一覧を閉じる"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="px-4 pt-4 pb-6 max-h-[72vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-2">
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveCategoryId(category.id);
+                      setIsCategoryPickerOpen(false);
+                    }}
+                    className={`min-h-12 rounded-2xl border px-3 py-2 text-left text-[11px] font-bold leading-tight transition-all ${
+                      activeCategoryId === category.id
+                        ? 'bg-gray-900 text-white border-gray-900 shadow-md'
+                        : 'bg-white text-gray-500 border-gray-100'
+                    }`}
+                    title={category.name}
+                  >
+                    <span className="block truncate">{category.name}</span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCategoryId('history');
+                    setIsCategoryPickerOpen(false);
+                  }}
+                  className={`min-h-12 rounded-2xl border px-3 py-2 text-left text-[11px] font-bold leading-tight transition-all ${
+                    activeCategoryId === 'history'
+                      ? 'bg-gray-900 text-white border-gray-900 shadow-md'
+                      : 'bg-white text-gray-500 border-gray-100'
+                  }`}
+                >
+                  History Log
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center bg-[#fbfbfc] overflow-y-auto relative z-0">
