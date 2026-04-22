@@ -37,7 +37,24 @@ const touchUpdatedAt = (): void => {
 
 const getUpdatedAtValue = (): string | null => {
   const raw = localStorage.getItem(STORAGE_KEY_META);
-  if (!raw) return null;
+  if (!raw) {
+    const items = safeParse<InventoryItem[]>(STORAGE_KEY_ITEMS, []);
+    const activities = safeParse<ActivityEntry[]>(STORAGE_KEY_ACTIVITIES, []);
+
+    const timestamps = [
+      ...items.flatMap(item => [item.createdAt, item.archivedAt].filter((value): value is string => typeof value === 'string')),
+      ...activities.map(activity => activity.timestamp),
+    ]
+      .map(value => new Date(value).getTime())
+      .filter(time => !Number.isNaN(time));
+
+    if (timestamps.length === 0) return null;
+
+    const fallbackUpdatedAt = new Date(Math.max(...timestamps)).toISOString();
+    touchUpdatedAt();
+    localStorage.setItem(STORAGE_KEY_META, JSON.stringify({ updatedAt: fallbackUpdatedAt }));
+    return fallbackUpdatedAt;
+  }
 
   try {
     const parsed = JSON.parse(raw) as { updatedAt?: unknown };
