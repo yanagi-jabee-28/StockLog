@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { InventoryItem, Category, ActivityEntry } from '../types';
 import { storage } from '../lib/storage';
-import { CATEGORY_IDS, isOpenedDailyCategoryId } from '../constants';
 import {
-  setStockForGroupByRoot,
+  setRootStockOnly,
   setStockForGroupByTarget,
   updateItemWithGroupSync,
 } from '../lib/itemSync';
@@ -87,8 +86,6 @@ export function useInventory() {
     const target = items.find(i => i.id === id);
     if (!target) return;
     
-    console.log(`[UPDATE_SYNC] Updating item group for: ${target.name}`, updates);
-
     const priceAwareUpdates = appendPriceHistoryIfNeeded(target, updates);
     const newItems = updateItemWithGroupSync(items, id, priceAwareUpdates);
 
@@ -109,11 +106,9 @@ export function useInventory() {
 
   const incrementStock = useCallback((id: string) => {
     const target = items.find(i => i.id === id);
-    if (!target) return;
+    if (!target || target.isOpened) return;
     
     const newStock = target.stock + 1;
-
-    console.log(`[STOCK_SYNC] Incrementing stock for ${target.name}. New total: ${newStock}`);
 
     const newItems = setStockForGroupByTarget(items, id, newStock);
     saveItems(newItems);
@@ -128,11 +123,9 @@ export function useInventory() {
 
   const decrementStock = useCallback((id: string) => {
     const target = items.find(i => i.id === id);
-    if (!target || target.stock <= 0) return;
+    if (!target || target.isOpened || target.stock <= 0) return;
     
     const newStock = Math.max(0, target.stock - 1);
-
-    console.log(`[STOCK_SYNC] Decrementing stock for ${target.name}. New total: ${newStock}`);
 
     const newItems = setStockForGroupByTarget(items, id, newStock);
     saveItems(newItems);
@@ -147,22 +140,41 @@ export function useInventory() {
 
   const deleteItem = useCallback((id: string) => {
     const target = items.find(i => i.id === id);
-    const newItems = items.filter(item => item.id !== id);
+    if (!target) return;
+
+    const linkedOpenedItems = target.isOpened
+      ? []
+      : items.filter(item => item.isOpened && item.originalItemId === id);
+
+    const linkedOpenedIds = new Set(linkedOpenedItems.map(item => item.id));
+    const newItems = items.filter(item => item.id !== id && !linkedOpenedIds.has(item.id));
+
     saveItems(newItems);
-    if (target) {
+
+    storage.addActivity({
+      itemId: id,
+      itemName: target.name,
+      type: 'deleted',
+      details: linkedOpenedItems.length > 0
+        ? `アイテムを削除（開封中 ${linkedOpenedItems.length} 件も連鎖削除）`
+        : 'アイテムを削除'
+    });
+
+    for (const opened of linkedOpenedItems) {
       storage.addActivity({
-        itemId: id,
-        itemName: target.name,
+        itemId: opened.id,
+        itemName: opened.name,
         type: 'deleted',
-        details: 'アイテムを削除'
+        details: `親ロット削除に伴い開封個体を削除（親ID: ${id}）`
       });
-      refreshActivities();
     }
+
+    refreshActivities();
   }, [items, saveItems, refreshActivities]);
 
   const openItem = useCallback((id: string) => {
     const sourceItem = items.find(i => i.id === id);
-    if (!sourceItem || sourceItem.stock <= 0) return;
+    if (!sourceItem || sourceItem.isOpened || sourceItem.stock <= 0) return;
     
     const newStock = sourceItem.stock - 1;
     const updatedPool = setStockForGroupByTarget(items, id, newStock);
@@ -171,9 +183,9 @@ export function useInventory() {
     const openedItem: InventoryItem = {
       ...sourceItem,
       id: crypto.randomUUID(), 
-      stock: newStock, // Ensure consistency from the start
+      stock: 1,
       isOpened: true,
-      categoryId: isOpenedDailyCategoryId(sourceItem.categoryId) ? CATEGORY_IDS.priorityDaily : CATEGORY_IDS.priority,
+      categoryId: sourceItem.categoryId,
       remainingAmount: '100',
       remainingPercent: 100,
       originalItemId: sourceItem.id
@@ -217,11 +229,24 @@ export function useInventory() {
     const target = items.find(i => i.id === id);
     if (!target || !target.isOpened || !target.originalItemId) return;
     
-    const originalItem = items.find(i => i.id === target.originalItemId);
-    const newStock = (originalItem?.stock ?? target.stock) + 1;
+    const originalItem = items.find(i => i.id === target.originalItemId && !i.isOpened);
 
+    if (!originalItem) {
+      const orphanRemoved = items.filter(item => item.id !== id);
+      saveItems(orphanRemoved);
+      storage.addActivity({
+        itemId: id,
+        itemName: target.name,
+        type: 'deleted',
+        details: '整合性修復: 親ロット不在の開封個体を削除'
+      });
+      refreshActivities();
+      return;
+    }
+
+    const newStock = originalItem.stock + 1;
     const itemPool = items.filter(item => item.id !== id);
-    const updatedPool = setStockForGroupByRoot(itemPool, target.originalItemId, newStock);
+    const updatedPool = setRootStockOnly(itemPool, target.originalItemId, newStock);
 
     saveItems(updatedPool);
     storage.addActivity({

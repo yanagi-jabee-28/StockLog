@@ -82,10 +82,7 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({
             </button>
           )}
           <button 
-            onClick={() => {
-              console.log(`[UI_DEBUG] Editing item: ${item.name}`, item);
-              onEdit?.(item);
-            }}
+            onClick={() => onEdit?.(item)}
             className="p-2 text-gray-300 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all"
             aria-label="編集"
           >
@@ -252,10 +249,11 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({
           {item.stock > 0 && !item.isOpened && !item.isArchived && onOpen && (
             <button
               onClick={() => onOpen(item.id)}
-              className="mr-2 flex items-center justify-center p-2.5 bg-violet-50 text-violet-600 hover:bg-violet-100 rounded-xl transition-all"
-              title="開封する"
+              className="mr-2 flex items-center gap-1.5 justify-center px-3 py-2.5 bg-violet-50 text-violet-600 hover:bg-violet-100 rounded-xl transition-all"
+              title="1つ開封する"
             >
               <BoxSelect className="w-5 h-5" />
+              <span className="text-[10px] font-black tracking-wider uppercase">1つ開封</span>
             </button>
           )}
 
@@ -269,7 +267,7 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({
             </button>
           )}
 
-          {!item.isArchived && (
+          {!item.isArchived && !item.isOpened && (
             <div className="flex items-center gap-3 p-1 bg-gray-50 rounded-[2rem] border border-gray-100">
               <button
                 onClick={() => onDecrement(item.id)}

@@ -8,6 +8,15 @@ const STORAGE_KEY_ACTIVITIES = 'stocklog_activities';
 
 const LEGACY_CATEGORY_MIGRATION: Record<string, string> = {
   stationery: CATEGORY_IDS.daily,
+  priority: CATEGORY_IDS.fresh,
+  priority_daily: CATEGORY_IDS.daily,
+  beverages: CATEGORY_IDS.beverage,
+  grocery: CATEGORY_IDS.fresh,
+  prepped: CATEGORY_IDS.fresh,
+  home_utility: CATEGORY_IDS.utility,
+  emergency_stock: CATEGORY_IDS.emergency,
+  med_cosme: CATEGORY_IDS.healthcare,
+  clothing: CATEGORY_IDS.wardrobe,
 };
 
 const migrateCategoryId = (categoryId: string): string => {
@@ -35,14 +44,56 @@ const normalizeCategories = (categories: Category[]): Category[] => {
 };
 
 const normalizeItems = (items: InventoryItem[]): InventoryItem[] => {
-  return items.map(item => {
+  const itemsById = new Map(items.map(item => [item.id, item]));
+
+  const normalized = items.map(item => {
+    let migratedCategoryId = migrateCategoryId(item.categoryId);
+
+    // Old opened categories mixed "state" and "type". Recover likely type from the original item when possible.
+    if ((item.categoryId === 'priority' || item.categoryId === 'priority_daily') && item.originalItemId) {
+      const originalItem = itemsById.get(item.originalItemId);
+      if (originalItem) {
+        migratedCategoryId = migrateCategoryId(originalItem.categoryId);
+      }
+    }
+
     const migratedItem = {
       ...item,
-      categoryId: migrateCategoryId(item.categoryId),
+      categoryId: migratedCategoryId,
     };
 
     return normalizePriceItem(migratedItem);
   });
+
+  const idSet = new Set(normalized.map(item => item.id));
+
+  return normalized.filter(item => {
+    if (!item.isOpened) return true;
+    if (!item.originalItemId) return false;
+    return idSet.has(item.originalItemId);
+  });
+};
+
+const appendIntegrityCleanupActivities = (removedItems: InventoryItem[]): void => {
+  if (removedItems.length === 0) return;
+
+  const data = localStorage.getItem(STORAGE_KEY_ACTIVITIES);
+  const activities: ActivityEntry[] = data ? JSON.parse(data) : [];
+  const now = new Date().toISOString();
+
+  const repairActivities: ActivityEntry[] = removedItems.map(item => ({
+    id: crypto.randomUUID(),
+    itemId: item.id,
+    itemName: item.name,
+    type: 'deleted',
+    timestamp: now,
+    details: '整合性修復: 親ロット不在の開封個体を自動削除'
+  }));
+
+  localStorage.setItem(
+    STORAGE_KEY_ACTIVITIES,
+    JSON.stringify([...repairActivities, ...activities].slice(0, 1000))
+  );
 };
 
 export const storage = {
@@ -52,9 +103,12 @@ export const storage = {
 
     const parsedItems: InventoryItem[] = JSON.parse(data);
     const normalizedItems = normalizeItems(parsedItems);
+    const normalizedIds = new Set(normalizedItems.map(item => item.id));
+    const removedItems = parsedItems.filter(item => !normalizedIds.has(item.id) && item.isOpened);
 
     if (JSON.stringify(parsedItems) !== JSON.stringify(normalizedItems)) {
       localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(normalizedItems));
+      appendIntegrityCleanupActivities(removedItems);
     }
 
     return normalizedItems;
@@ -176,10 +230,15 @@ export const storage = {
         categoryId: migrateCategoryId(item.categoryId),
       }));
 
-      storage.setItems(sanitizedItems);
+      const normalizedItems = normalizeItems(sanitizedItems);
+      const normalizedIds = new Set(normalizedItems.map(item => item.id));
+      const removedItems = sanitizedItems.filter(item => !normalizedIds.has(item.id) && item.isOpened);
+
+      storage.setItems(normalizedItems);
+      appendIntegrityCleanupActivities(removedItems);
 
       if (categories && Array.isArray(categories)) {
-        storage.setCategories(categories);
+        storage.setCategories(normalizeCategories(categories));
       }
 
       if (activities && Array.isArray(activities)) {

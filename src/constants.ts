@@ -1,43 +1,44 @@
 import { ActivityType, Category } from './types';
 
 export const CATEGORY_IDS = {
-  priority: 'priority',
-  priorityDaily: 'priority_daily',
-  beverages: 'beverages',
-  grocery: 'grocery',
-  prepped: 'prepped',
+  fresh: 'fresh',
   frozen: 'frozen',
   pantry: 'pantry',
+  beverage: 'beverage',
   daily: 'daily',
-  homeUtility: 'home_utility',
-  emergencyStock: 'emergency_stock',
+  utility: 'utility',
+  emergency: 'emergency',
+  wardrobe: 'wardrobe',
+  innerwear: 'innerwear',
+  accessories: 'accessories',
+  seasonal: 'seasonal',
+  healthcare: 'healthcare',
   hobby: 'hobby',
-  medCosme: 'med_cosme',
 } as const;
 
 export const DEFAULT_CATEGORIES: Category[] = [
-  { id: CATEGORY_IDS.priority, name: '🚨 開封済・食べ物' },
-  { id: CATEGORY_IDS.priorityDaily, name: '🧼 使用中・消耗品' },
-  { id: CATEGORY_IDS.beverages, name: '🥤 飲料・ドリンク' },
-  { id: CATEGORY_IDS.grocery, name: '🛒 生鮮・買い出し品' },
-  { id: CATEGORY_IDS.prepped, name: '🍱 作り置き・お弁当' },
-  { id: CATEGORY_IDS.frozen, name: '❄️ 冷凍・ストック' },
-  { id: CATEGORY_IDS.pantry, name: '🧂 調味料・乾物' },
-  { id: CATEGORY_IDS.daily, name: '🧻 日用品・消耗品' },
-  { id: CATEGORY_IDS.homeUtility, name: '🛠️ 家電・住設消耗品' },
-  { id: CATEGORY_IDS.emergencyStock, name: '🆘 防災備蓄' },
-  { id: CATEGORY_IDS.hobby, name: '🎨 趣味・ホビー' },
-  { id: CATEGORY_IDS.medCosme, name: '💄 常備薬・コスメ' },
+  { id: CATEGORY_IDS.fresh, name: '生鮮・冷蔵' },
+  { id: CATEGORY_IDS.frozen, name: '冷凍・保存食' },
+  { id: CATEGORY_IDS.pantry, name: '調味料・乾物' },
+  { id: CATEGORY_IDS.beverage, name: '飲料・嗜好品' },
+  { id: CATEGORY_IDS.daily, name: '日用消耗品' },
+  { id: CATEGORY_IDS.utility, name: '住設・家電消耗品' },
+  { id: CATEGORY_IDS.emergency, name: '防災・備蓄' },
+  { id: CATEGORY_IDS.wardrobe, name: '衣類・ワードローブ' },
+  { id: CATEGORY_IDS.innerwear, name: 'インナー・靴下' },
+  { id: CATEGORY_IDS.accessories, name: '靴・服飾雑貨' },
+  { id: CATEGORY_IDS.seasonal, name: '季節もの・保管衣類' },
+  { id: CATEGORY_IDS.healthcare, name: '医療・ヘルスケア' },
+  { id: CATEGORY_IDS.hobby, name: '趣味・探求' },
 ];
 
 export const EXPIRY_CATEGORY_IDS = [
-  CATEGORY_IDS.priority,
-  CATEGORY_IDS.beverages,
-  CATEGORY_IDS.grocery,
+  CATEGORY_IDS.fresh,
   CATEGORY_IDS.frozen,
   CATEGORY_IDS.pantry,
-  CATEGORY_IDS.medCosme,
-  CATEGORY_IDS.prepped,
+  CATEGORY_IDS.beverage,
+  CATEGORY_IDS.emergency,
+  CATEGORY_IDS.healthcare,
 ] as const;
 
 const EXPIRY_CATEGORY_ID_SET = new Set<string>(EXPIRY_CATEGORY_IDS);
@@ -48,10 +49,11 @@ export const isExpiryCategoryId = (categoryId: string): boolean => {
 
 export const OPENED_DAILY_CATEGORY_IDS = [
   CATEGORY_IDS.daily,
-  CATEGORY_IDS.homeUtility,
-  CATEGORY_IDS.emergencyStock,
-  CATEGORY_IDS.medCosme,
+  CATEGORY_IDS.utility,
+  CATEGORY_IDS.emergency,
+  CATEGORY_IDS.healthcare,
   CATEGORY_IDS.hobby,
+  CATEGORY_IDS.innerwear,
 ] as const;
 
 const OPENED_DAILY_CATEGORY_ID_SET = new Set<string>(OPENED_DAILY_CATEGORY_IDS);

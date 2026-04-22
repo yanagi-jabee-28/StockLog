@@ -17,7 +17,7 @@ interface Props {
 }
 
 const UNIT_GROUPS = [
-  { label: '個数', units: ['個', '枚', '本', 'パック', '袋'] },
+  { label: '個数', units: ['個', '枚', '本', 'ペア', 'パック', '袋'] },
   { label: '重量', units: ['g', 'kg'] },
   { label: '容量', units: ['ml', 'L'] },
 ];
@@ -65,6 +65,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
     setName(suggestion.name);
     setCategoryId(suggestion.categoryId);
     setUnit(suggestion.unit);
+    setContentUnit(suggestion.contentUnit || suggestion.unit);
     setShowSuggestions(false);
   };
 
@@ -144,7 +145,13 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
     if (editItem && onEdit && !isDuplicate) {
       onEdit(editItem.id, data);
     } else {
-      onAdd(data);
+      onAdd({
+        ...data,
+        isOpened: false,
+        originalItemId: undefined,
+        remainingAmount: undefined,
+        remainingPercent: undefined,
+      });
     }
     
     onClose();
@@ -220,6 +227,8 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
                         <span className="font-bold text-gray-900 text-sm">{suggestion.name}</span>
                         <span className="text-[10px] text-gray-400 font-medium">
                           {categories.find(c => c.id === suggestion.categoryId)?.name} · {suggestion.unit}
+                          {suggestion.contentAmount !== undefined && suggestion.contentUnit ? ` · ${suggestion.contentAmount}${suggestion.contentUnit}` : ''}
+                          {suggestion.expiryDate ? ` · 期限 ${suggestion.expiryDate}` : ''}
                         </span>
                       </div>
                       <BoxSelect className="w-4 h-4 text-gray-200 group-hover/sug:text-violet-400 transition-colors" />
@@ -326,13 +335,19 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
                   <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
                     単位
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={contentUnit}
                     onChange={e => setContentUnit(e.target.value)}
-                    className="w-full px-5 py-4 bg-white border border-gray-100 rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-center text-xl font-mono font-bold text-gray-900"
-                    placeholder="g"
-                  />
+                    className="w-full px-4 py-4 bg-white border border-gray-100 rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-center text-lg font-bold text-gray-900 appearance-none cursor-pointer"
+                  >
+                    {UNIT_GROUPS.map(group => (
+                      <optgroup key={group.label} label={group.label}>
+                        {group.units.map(u => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>

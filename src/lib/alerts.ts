@@ -32,7 +32,7 @@ export const getExpiryStatus = (expiryDate?: string): ExpiryStatus | null => {
 };
 
 export const getItemAlertState = (item: InventoryItem): ItemAlertState => {
-  const isStockAlert = item.stock <= item.alertThreshold;
+  const isStockAlert = !item.isOpened && item.stock <= item.alertThreshold;
   const isPercentAlert = Boolean(item.isOpened) && (item.remainingPercent ?? 100) <= (item.alertThresholdPercent ?? 20);
   const expiryStatus = getExpiryStatus(item.expiryDate);
   const isAlert = isStockAlert || isPercentAlert || (expiryStatus?.isCritical ?? false);

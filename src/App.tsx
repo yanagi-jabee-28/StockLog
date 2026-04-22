@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   Settings, 
   Plus, 
@@ -64,7 +64,7 @@ export default function App() {
     reloadData
   } = useInventory();
   
-  const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || CATEGORY_IDS.priority);
+  const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || CATEGORY_IDS.fresh);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [isDuplicateMode, setIsDuplicateMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -86,6 +86,31 @@ export default function App() {
     // When duplicating, we want a new item with same metadata but stock starts at 0 or same as source
     setEditingItem(item); 
     setIsAddModalOpen(true);
+  };
+
+  const handleDeleteItem = (id: string) => {
+    const target = items.find(item => item.id === id);
+    if (!target) return;
+
+    if (target.isOpened) {
+      const ok = window.confirm(`開封中アイテム「${target.name}」を削除します。よろしいですか？`);
+      if (!ok) return;
+      deleteItem(id);
+      return;
+    }
+
+    const linkedOpenedCount = items.filter(
+      item => item.isOpened && item.originalItemId === id
+    ).length;
+
+    const message = linkedOpenedCount > 0
+      ? `ロット「${target.name}」を削除すると、紐付く開封中 ${linkedOpenedCount} 件も削除されます。続行しますか？`
+      : `ロット「${target.name}」を削除します。よろしいですか？`;
+
+    const ok = window.confirm(message);
+    if (!ok) return;
+
+    deleteItem(id);
   };
 
   const handleCloseAddModal = () => {
@@ -116,6 +141,51 @@ export default function App() {
     
     return compareByExpiryThenName(a, b);
   });
+
+  const activeItems = filteredItems
+    .filter(item => item.isOpened)
+    .sort((a, b) => {
+      const percentDiff = (a.remainingPercent ?? 100) - (b.remainingPercent ?? 100);
+      if (percentDiff !== 0) return percentDiff;
+      return compareByExpiryThenName(a, b);
+    });
+
+  const unopenedItems = filteredItems
+    .filter(item => !item.isOpened)
+    .sort(compareByExpiryThenName);
+
+  const unopenedGroups = useMemo(() => {
+    const groups = new Map<string, { name: string; items: InventoryItem[]; totalStock: number }>();
+
+    for (const item of unopenedItems) {
+      const key = item.name.trim().toLowerCase();
+      const group = groups.get(key);
+      if (!group) {
+        groups.set(key, { name: item.name, items: [item], totalStock: item.stock });
+        continue;
+      }
+
+      group.items.push(item);
+      group.totalStock += item.stock;
+    }
+
+    return Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+  }, [unopenedItems]);
+
+  const totalStockByRootId = useMemo(() => {
+    const totals = new Map<string, number>();
+
+    for (const item of items) {
+      if (item.isArchived) continue;
+
+      const rootId = item.isOpened && item.originalItemId ? item.originalItemId : item.id;
+      const current = totals.get(rootId) ?? 0;
+      const contribution = item.isOpened ? 1 : item.stock;
+      totals.set(rootId, current + contribution);
+    }
+
+    return totals;
+  }, [items]);
 
   const handleClearActivities = () => {
     clearActivities();
@@ -376,22 +446,135 @@ export default function App() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-              {filteredItems.map(item => (
-                <InventoryItemCard
-                  key={item.id}
-                  item={{...item, isHistoryView: activeCategoryId === 'history'} as any}
-                  onIncrement={incrementStock}
-                  onDecrement={decrementStock}
-                  onDelete={deleteItem}
-                  onOpen={openItem}
-                  onUnopen={unopenItem}
-                  onDuplicate={handleDuplicateItem}
-                  onEdit={handleEditItem}
-                  onArchive={archiveItem}
-                  onUpdateRemaining={updateRemainingAmount}
-                />
-              ))}
+            <div className="space-y-10">
+              {activeItems.length > 0 && (
+                <section>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-sm font-black text-gray-900 tracking-wider uppercase">Active / 使用中</h3>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{activeItems.length} items</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                    {activeItems.map(item => (
+                      <InventoryItemCard
+                        key={item.id}
+                        item={{
+                          ...item,
+                          stock: totalStockByRootId.get(item.originalItemId || item.id) ?? item.stock,
+                          isHistoryView: activeCategoryId === 'history'
+                        } as any}
+                        onIncrement={incrementStock}
+                        onDecrement={decrementStock}
+                        onDelete={handleDeleteItem}
+                        onOpen={openItem}
+                        onUnopen={unopenItem}
+                        onDuplicate={handleDuplicateItem}
+                        onEdit={handleEditItem}
+                        onArchive={archiveItem}
+                        onUpdateRemaining={updateRemainingAmount}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <section>
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-sm font-black text-gray-900 tracking-wider uppercase">Stock / 未開封在庫</h3>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{unopenedItems.length} items</span>
+                </div>
+                {unopenedItems.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-gray-200 bg-white/80 py-14 text-center">
+                    <p className="text-xs font-bold text-gray-400">このカテゴリの未開封在庫はありません。</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {unopenedGroups.map(group => (
+                      <details key={group.name} className="rounded-3xl border border-gray-100 bg-white shadow-sm open:shadow-md transition-all" open={group.items.length === 1}>
+                        <summary className="list-none cursor-pointer px-6 py-5 flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <h4 className="text-base font-black text-gray-900 truncate">{group.name}</h4>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                              {group.items.length} ロット / 合計在庫 {group.totalStock}
+                            </p>
+                          </div>
+                          <span className="inline-flex items-center px-3 py-1 rounded-full bg-gray-50 border border-gray-100 text-[10px] font-black text-gray-500 uppercase tracking-wider">
+                            展開
+                          </span>
+                        </summary>
+
+                        <div className="px-4 pb-4">
+                          <div className="overflow-hidden rounded-2xl border border-gray-100">
+                            {group.items.map((item, index) => (
+                              <div key={item.id} className={`p-4 ${index !== group.items.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-black text-gray-800">
+                                      ロット {index + 1}
+                                      {item.contentAmount !== undefined && (item.contentUnit || item.unit)
+                                        ? ` · ${item.contentAmount}${item.contentUnit || item.unit}`
+                                        : ''}
+                                    </p>
+                                    <p className="text-[11px] text-gray-500 font-medium mt-1">
+                                      {item.expiryDate ? `期限 ${item.expiryDate}` : '期限なし'}
+                                      {item.purchasePrice !== undefined ? ` · ¥${item.purchasePrice.toLocaleString('ja-JP')}` : ''}
+                                      {item.notes ? ` · ${item.notes}` : ''}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-[11px] font-black text-gray-500 px-3 py-1 rounded-full bg-gray-50 border border-gray-100">
+                                      在庫 {item.stock}{item.unit}
+                                    </span>
+                                    <button
+                                      onClick={() => decrementStock(item.id)}
+                                      disabled={item.stock <= 0}
+                                      className={`px-3 py-2 rounded-xl text-xs font-black transition-all ${item.stock > 0 ? 'bg-white border border-gray-200 text-gray-700 hover:border-rose-300 hover:text-rose-600' : 'bg-gray-50 border border-gray-100 text-gray-300 cursor-not-allowed'}`}
+                                    >
+                                      -1
+                                    </button>
+                                    <button
+                                      onClick={() => incrementStock(item.id)}
+                                      className="px-3 py-2 rounded-xl text-xs font-black bg-gray-900 text-white hover:bg-black transition-all"
+                                    >
+                                      +1
+                                    </button>
+                                    <button
+                                      onClick={() => openItem(item.id)}
+                                      disabled={item.stock <= 0}
+                                      className={`px-3 py-2 rounded-xl text-xs font-black transition-all ${item.stock > 0 ? 'bg-violet-50 text-violet-700 border border-violet-100 hover:bg-violet-100' : 'bg-gray-50 text-gray-300 border border-gray-100 cursor-not-allowed'}`}
+                                      title="このロットから1つ開封"
+                                    >
+                                      1つ開封
+                                    </button>
+                                    <button
+                                      onClick={() => handleEditItem(item)}
+                                      className="px-3 py-2 rounded-xl text-xs font-black bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 transition-all"
+                                    >
+                                      編集
+                                    </button>
+                                    <button
+                                      onClick={() => handleDuplicateItem(item)}
+                                      className="px-3 py-2 rounded-xl text-xs font-black bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 transition-all"
+                                    >
+                                      別ロット追加
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteItem(item.id)}
+                                      className="px-3 py-2 rounded-xl text-xs font-black bg-white border border-rose-100 text-rose-500 hover:bg-rose-50 transition-all"
+                                    >
+                                      削除
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                )}
+              </section>
             </div>
           )}
         </div>

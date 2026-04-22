@@ -10,7 +10,15 @@ const isInSyncGroup = (item: InventoryItem, rootId: string): boolean => {
 
 const toSyncableUpdates = (updates: Partial<InventoryItem>): Partial<InventoryItem> => {
   const syncableUpdates = { ...updates };
+  delete syncableUpdates.stock;
   delete syncableUpdates.isOpened;
+  delete syncableUpdates.isArchived;
+  delete syncableUpdates.archivedAt;
+  delete syncableUpdates.originalItemId;
+  delete syncableUpdates.categoryId;
+  delete syncableUpdates.unit;
+  delete syncableUpdates.alertThreshold;
+  delete syncableUpdates.alertThresholdPercent;
   delete syncableUpdates.remainingPercent;
   delete syncableUpdates.remainingAmount;
   delete syncableUpdates.id;
@@ -52,7 +60,7 @@ export const setStockForGroupByTarget = (
   const rootId = getRootId(target);
 
   return items.map(item => {
-    if (isInSyncGroup(item, rootId)) {
+    if (isInSyncGroup(item, rootId) && !item.isOpened) {
       return { ...item, stock: nextStock };
     }
     return item;
@@ -65,7 +73,20 @@ export const setStockForGroupByRoot = (
   nextStock: number
 ): InventoryItem[] => {
   return items.map(item => {
-    if (isInSyncGroup(item, rootId)) {
+    if (isInSyncGroup(item, rootId) && !item.isOpened) {
+      return { ...item, stock: nextStock };
+    }
+    return item;
+  });
+};
+
+export const setRootStockOnly = (
+  items: InventoryItem[],
+  rootId: string,
+  nextStock: number
+): InventoryItem[] => {
+  return items.map(item => {
+    if (item.id === rootId && !item.isOpened) {
       return { ...item, stock: nextStock };
     }
     return item;
