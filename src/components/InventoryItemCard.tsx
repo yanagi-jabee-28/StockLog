@@ -182,7 +182,7 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({
             COMPLETED
           </span>
         )}
-        {!item.isArchived && (item as any).isHistoryView && (
+        {!item.isArchived && item.isHistoryView && (
            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-violet-50 text-violet-600 text-[10px] font-black rounded-full border border-violet-100 whitespace-nowrap uppercase tracking-widest">
             IN STOCK
           </span>

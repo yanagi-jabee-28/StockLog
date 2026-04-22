@@ -16,6 +16,7 @@ export interface InventoryItem {
   id: string;
   name: string;
   categoryId: string;
+  isHistoryView?: boolean;
   stock: number;
   unit: string;
   alertThreshold: number;

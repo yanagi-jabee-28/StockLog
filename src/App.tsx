@@ -461,7 +461,7 @@ export default function App() {
                           ...item,
                           stock: totalStockByRootId.get(item.originalItemId || item.id) ?? item.stock,
                           isHistoryView: activeCategoryId === 'history'
-                        } as any}
+                        }}
                         onIncrement={incrementStock}
                         onDecrement={decrementStock}
                         onDelete={handleDeleteItem}

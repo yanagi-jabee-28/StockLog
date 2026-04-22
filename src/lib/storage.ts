@@ -21,6 +21,15 @@ const safeParse = <T>(key: string, fallback: T): T => {
   }
 };
 
+const safeParseValue = <T>(raw: string, fallback: T): T => {
+  try {
+    return JSON.parse(raw) as T;
+  } catch (error) {
+    console.warn('Corrupted JSON payload encountered. Using fallback value instead.', error);
+    return fallback;
+  }
+};
+
 const LEGACY_CATEGORY_MIGRATION: Record<string, string> = {
   stationery: CATEGORY_IDS.daily,
   priority: CATEGORY_IDS.fresh,
@@ -94,7 +103,7 @@ const appendIntegrityCleanupActivities = (removedItems: InventoryItem[]): void =
   if (removedItems.length === 0) return;
 
   const data = localStorage.getItem(STORAGE_KEY_ACTIVITIES);
-  const activities: ActivityEntry[] = data ? JSON.parse(data) : [];
+  const activities: ActivityEntry[] = data ? safeParseValue<ActivityEntry[]>(data, []) : [];
   const now = new Date().toISOString();
 
   const repairActivities: ActivityEntry[] = removedItems.map(item => ({
@@ -242,12 +251,13 @@ export const storage = {
 
   importData: (jsonString: string): boolean => {
     try {
-      const parsed = JSON.parse(jsonString);
+      const parsed = safeParseValue<Record<string, unknown>>(jsonString, {});
       
       // Compatibility Layer: Handle both flat and nested formats
-      const items = (parsed.data?.items || parsed.items) as InventoryItem[];
-      const categories = (parsed.data?.categories || parsed.categories) as Category[];
-      const activities = (parsed.data?.activities || parsed.activities) as ActivityEntry[];
+      const parsedData = (parsed.data as Record<string, unknown> | undefined) ?? undefined;
+      const items = (parsedData?.items || parsed.items) as InventoryItem[];
+      const categories = (parsedData?.categories || parsed.categories) as Category[];
+      const activities = (parsedData?.activities || parsed.activities) as ActivityEntry[];
 
       if (!items || !Array.isArray(items)) {
         throw new Error('Invalid items data');
