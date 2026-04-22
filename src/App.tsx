@@ -71,9 +71,14 @@ export default function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<{id: string, details: string} | null>(null);
+  const [deleteConfirmState, setDeleteConfirmState] = useState<{
+    item: InventoryItem;
+    linkedOpenedCount: number;
+  } | null>(null);
 
   // Handle Escape key and mobile Back gesture for activity edit
   useModalNavigation(!!editingActivity, () => setEditingActivity(null));
+  useModalNavigation(!!deleteConfirmState, () => setDeleteConfirmState(null));
 
   const handleEditItem = (item: InventoryItem) => {
     setIsDuplicateMode(false);
@@ -92,25 +97,20 @@ export default function App() {
     const target = items.find(item => item.id === id);
     if (!target) return;
 
-    if (target.isOpened) {
-      const ok = window.confirm(`開封中アイテム「${target.name}」を削除します。よろしいですか？`);
-      if (!ok) return;
-      deleteItem(id);
-      return;
-    }
+    const linkedOpenedCount = target.isOpened
+      ? 0
+      : items.filter(item => item.isOpened && item.originalItemId === id).length;
 
-    const linkedOpenedCount = items.filter(
-      item => item.isOpened && item.originalItemId === id
-    ).length;
+    setDeleteConfirmState({
+      item: target,
+      linkedOpenedCount,
+    });
+  };
 
-    const message = linkedOpenedCount > 0
-      ? `ロット「${target.name}」を削除すると、紐付く開封中 ${linkedOpenedCount} 件も削除されます。続行しますか？`
-      : `ロット「${target.name}」を削除します。よろしいですか？`;
-
-    const ok = window.confirm(message);
-    if (!ok) return;
-
-    deleteItem(id);
+  const handleConfirmDelete = () => {
+    if (!deleteConfirmState) return;
+    deleteItem(deleteConfirmState.item.id);
+    setDeleteConfirmState(null);
   };
 
   const handleCloseAddModal = () => {
@@ -592,6 +592,48 @@ export default function App() {
       </div>
 
       {/* Modals */}
+      {deleteConfirmState && (
+        <div
+          className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setDeleteConfirmState(null)}
+        >
+          <div
+            className="bg-white rounded-t-[2rem] sm:rounded-3xl p-7 sm:p-8 w-full sm:max-w-md shadow-2xl animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.18em] mb-2">Delete Confirmation</p>
+            <h3 className="text-xl font-black text-gray-900 tracking-tight mb-3">削除してもよろしいですか？</h3>
+
+            <div className="rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3 mb-6">
+              <p className="text-sm font-bold text-rose-700 leading-relaxed">
+                {deleteConfirmState.item.isOpened
+                  ? `開封中アイテム「${deleteConfirmState.item.name}」を削除します。`
+                  : deleteConfirmState.linkedOpenedCount > 0
+                    ? `ロット「${deleteConfirmState.item.name}」を削除します。紐付く開封中 ${deleteConfirmState.linkedOpenedCount} 件も同時に削除されます。`
+                    : `ロット「${deleteConfirmState.item.name}」を削除します。`}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmState(null)}
+                className="w-full py-3.5 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-all active:scale-95"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="w-full py-3.5 rounded-2xl bg-rose-500 text-white font-black hover:bg-rose-600 transition-all active:scale-95"
+              >
+                削除する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {editingActivity && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setEditingActivity(null)}>
           <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
