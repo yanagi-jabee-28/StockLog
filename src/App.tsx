@@ -61,7 +61,8 @@ export default function App() {
     deleteActivity,
     updateActivity,
     clearActivities,
-    reloadData
+    reloadData,
+    updatedAt
   } = useInventory();
   
   const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || CATEGORY_IDS.fresh);
@@ -207,6 +208,20 @@ export default function App() {
     };
   };
 
+  const formatUpdatedAt = (value: string | null) => {
+    if (!value) return '最終更新: -';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '最終更新: -';
+
+    return new Intl.DateTimeFormat('ja-JP', {
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date).replace(/\//g, '/');
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-screen bg-[#f8f9fa] text-gray-900 overflow-hidden font-sans xl:max-w-[1400px] xl:mx-auto xl:shadow-[0_0_80px_rgba(0,0,0,0.05)] xl:my-6 xl:h-[calc(100vh-3rem)] xl:rounded-[2.5rem] border-gray-100">
       
@@ -270,7 +285,10 @@ export default function App() {
             </button>
           </div>
           
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-[10px] font-medium text-gray-400 tracking-wide">
+              最終更新 {formatUpdatedAt(updatedAt)}
+            </p>
             <a 
               href="https://ai.studio/apps/cf93f8bf-7fd1-41ca-9a7c-e8395e8891e8" 
               target="_blank" 
@@ -298,6 +316,10 @@ export default function App() {
             <Settings className="w-5 h-5" />
           </button>
         </div>
+
+        <p className="mb-4 text-[10px] font-medium text-gray-400 tracking-wide">
+          最終更新 {formatUpdatedAt(updatedAt)}
+        </p>
 
         <div className="flex overflow-x-auto hide-scrollbar gap-2 -mx-6 px-6 pb-2">
           {categories.map((category) => (

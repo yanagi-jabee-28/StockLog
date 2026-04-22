@@ -5,6 +5,7 @@ import { normalizePriceItem } from './price';
 const STORAGE_KEY_ITEMS = 'stocklog_items';
 const STORAGE_KEY_CATEGORIES = 'stocklog_categories';
 const STORAGE_KEY_ACTIVITIES = 'stocklog_activities';
+const STORAGE_KEY_META = 'stocklog_meta';
 const APP_STORAGE_KEYS = [STORAGE_KEY_ITEMS, STORAGE_KEY_CATEGORIES, STORAGE_KEY_ACTIVITIES] as const;
 const DEFAULT_CATEGORY_ID_SET = new Set(DEFAULT_CATEGORIES.map(category => category.id));
 
@@ -30,6 +31,22 @@ const safeParseValue = <T>(raw: string, fallback: T): T => {
   }
 };
 
+const touchUpdatedAt = (): void => {
+  localStorage.setItem(STORAGE_KEY_META, JSON.stringify({ updatedAt: new Date().toISOString() }));
+};
+
+const getUpdatedAtValue = (): string | null => {
+  const raw = localStorage.getItem(STORAGE_KEY_META);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as { updatedAt?: unknown };
+    return typeof parsed.updatedAt === 'string' ? parsed.updatedAt : null;
+  } catch {
+    return null;
+  }
+};
+
 const LEGACY_CATEGORY_MIGRATION: Record<string, string> = {
   stationery: CATEGORY_IDS.daily,
   priority: CATEGORY_IDS.fresh,
@@ -48,24 +65,25 @@ const migrateCategoryId = (categoryId: string): string => {
 };
 
 const normalizeCategories = (categories: Category[]): Category[] => {
-  const seen = new Set<string>();
-  const normalized = categories
-    .map(category => ({ ...category, id: migrateCategoryId(category.id) }))
-    .filter(category => {
-      if (!DEFAULT_CATEGORY_ID_SET.has(category.id)) return false;
-      if (seen.has(category.id)) return false;
-      seen.add(category.id);
-      return true;
-    });
+  const normalizedById = new Map<string, Category>();
+  const extras: Category[] = [];
 
-  for (const defaultCategory of DEFAULT_CATEGORIES) {
-    if (!seen.has(defaultCategory.id)) {
-      normalized.push(defaultCategory);
-      seen.add(defaultCategory.id);
+  for (const category of categories) {
+    const migratedCategory = { ...category, id: migrateCategoryId(category.id) };
+
+    if (DEFAULT_CATEGORY_ID_SET.has(migratedCategory.id)) {
+      normalizedById.set(migratedCategory.id, migratedCategory);
+      continue;
     }
+
+    extras.push(migratedCategory);
   }
 
-  return normalized;
+  const normalized = DEFAULT_CATEGORIES.map(defaultCategory => {
+    return normalizedById.get(defaultCategory.id) ?? defaultCategory;
+  });
+
+  return [...normalized, ...extras];
 };
 
 const normalizeItems = (items: InventoryItem[]): InventoryItem[] => {
@@ -138,6 +156,7 @@ export const storage = {
 
   setItems: (items: InventoryItem[]): void => {
     localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(items));
+    touchUpdatedAt();
   },
 
   getCategories: (): Category[] => {
@@ -153,6 +172,7 @@ export const storage = {
 
   setCategories: (categories: Category[]): void => {
     localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(categories));
+    touchUpdatedAt();
   },
 
   getActivities: (): ActivityEntry[] => {
@@ -163,6 +183,7 @@ export const storage = {
     for (const key of APP_STORAGE_KEYS) {
       localStorage.removeItem(key);
     }
+    localStorage.removeItem(STORAGE_KEY_META);
   },
 
   resetToDefaults: (): void => {
@@ -170,6 +191,7 @@ export const storage = {
     storage.setItems([]);
     storage.setCategories(DEFAULT_CATEGORIES);
     storage.clearActivities();
+    touchUpdatedAt();
   },
 
   repairData: (): void => {
@@ -180,6 +202,7 @@ export const storage = {
     storage.setItems(items);
     storage.setCategories(categories);
     localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(activities.slice(0, 1000)));
+    touchUpdatedAt();
   },
 
   addActivity: (activity: Omit<ActivityEntry, 'id' | 'timestamp'>): void => {
@@ -201,6 +224,7 @@ export const storage = {
           }
           lastActivity.timestamp = now.toISOString();
           localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(activities));
+          touchUpdatedAt();
           return;
         }
       }
@@ -213,11 +237,13 @@ export const storage = {
     };
     const updatedActivities = [newActivity, ...activities].slice(0, 1000);
     localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(updatedActivities));
+    touchUpdatedAt();
   },
 
   deleteActivity: (id: string): void => {
     const activities = storage.getActivities().filter(a => a.id !== id);
     localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(activities));
+    touchUpdatedAt();
   },
 
   updateActivity: (id: string, updates: Partial<ActivityEntry>): void => {
@@ -225,10 +251,12 @@ export const storage = {
       a.id === id ? { ...a, ...updates } : a
     );
     localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(activities));
+    touchUpdatedAt();
   },
 
   clearActivities: (): void => {
     localStorage.removeItem(STORAGE_KEY_ACTIVITIES);
+    touchUpdatedAt();
   },
 
   exportData: (): string => {
@@ -287,10 +315,18 @@ export const storage = {
         localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(activities.slice(0, 1000)));
       }
 
+      touchUpdatedAt();
+
       return true;
     } catch (e) {
       console.error('Failed to import data:', e);
       return false;
     }
+  }
+
+  ,
+
+  getUpdatedAt: (): string | null => {
+    return getUpdatedAtValue();
   }
 };
