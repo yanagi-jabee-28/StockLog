@@ -3,6 +3,7 @@ import { ActivityType, Category } from './types';
 export const CATEGORY_IDS = {
   fresh: 'fresh',
   frozen: 'frozen',
+  seasoning: 'seasoning',
   pantry: 'pantry',
   beverage: 'beverage',
   daily: 'daily',
@@ -18,9 +19,10 @@ export const CATEGORY_IDS = {
 } as const;
 
 export const DEFAULT_CATEGORIES: Category[] = [
-  { id: CATEGORY_IDS.fresh, name: '🥬 生鮮・冷蔵' },
-  { id: CATEGORY_IDS.frozen, name: '🧊 冷凍・保存食' },
-  { id: CATEGORY_IDS.pantry, name: '🧂 調味料・乾物' },
+  { id: CATEGORY_IDS.fresh, name: '🥬 冷蔵保存（生鮮・要冷蔵品）' },
+  { id: CATEGORY_IDS.frozen, name: '🧊 冷凍保存' },
+  { id: CATEGORY_IDS.seasoning, name: '🧂 調味料（常温）' },
+  { id: CATEGORY_IDS.pantry, name: '🍘 乾物・保存食' },
   { id: CATEGORY_IDS.beverage, name: '🥤 飲料・嗜好品' },
   { id: CATEGORY_IDS.daily, name: '🧻 日用消耗品' },
   { id: CATEGORY_IDS.utility, name: '🔧 住設・家電消耗品' },
@@ -39,6 +41,7 @@ export const APP_LAST_UPDATED = '2026/04/22 10:30';
 export const EXPIRY_CATEGORY_IDS = [
   CATEGORY_IDS.fresh,
   CATEGORY_IDS.frozen,
+  CATEGORY_IDS.seasoning,
   CATEGORY_IDS.pantry,
   CATEGORY_IDS.beverage,
   CATEGORY_IDS.emergency,
