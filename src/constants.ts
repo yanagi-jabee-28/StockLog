@@ -34,6 +34,8 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: CATEGORY_IDS.hobby, name: '趣味・探求' },
 ];
 
+export const APP_LAST_UPDATED = '2026/04/22 10:30';
+
 export const EXPIRY_CATEGORY_IDS = [
   CATEGORY_IDS.fresh,
   CATEGORY_IDS.frozen,

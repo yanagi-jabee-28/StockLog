@@ -50,24 +50,20 @@ export function useInventory() {
   const [items, setItemsState] = useState<InventoryItem[]>([]);
   const [categories, setCategoriesState] = useState<Category[]>([]);
   const [activities, setActivitiesState] = useState<ActivityEntry[]>([]);
-  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
 
   useEffect(() => {
     setItemsState(storage.getItems().map(withPriceMetadata));
     setCategoriesState(storage.getCategories());
     setActivitiesState(storage.getActivities());
-    setUpdatedAt(storage.getUpdatedAt());
   }, []);
 
   const saveItems = useCallback((newItems: InventoryItem[]) => {
     setItemsState(newItems);
     storage.setItems(newItems);
-    setUpdatedAt(storage.getUpdatedAt());
   }, []);
 
   const refreshActivities = useCallback(() => {
     setActivitiesState(storage.getActivities());
-    setUpdatedAt(storage.getUpdatedAt());
   }, []);
 
   const addItem = useCallback((item: Omit<InventoryItem, 'id' | 'createdAt'>) => {
@@ -295,7 +291,6 @@ export function useInventory() {
     setItemsState(storage.getItems().map(withPriceMetadata));
     setCategoriesState(storage.getCategories());
     setActivitiesState(storage.getActivities());
-    setUpdatedAt(storage.getUpdatedAt());
   }, []);
 
   return {
@@ -315,8 +310,6 @@ export function useInventory() {
     updateActivity,
     clearActivities,
     reloadData
-    ,
-    updatedAt
   };
 }
 
