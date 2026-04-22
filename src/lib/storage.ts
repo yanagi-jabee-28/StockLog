@@ -5,6 +5,20 @@ import { normalizePriceItem } from './price';
 const STORAGE_KEY_ITEMS = 'stocklog_items';
 const STORAGE_KEY_CATEGORIES = 'stocklog_categories';
 const STORAGE_KEY_ACTIVITIES = 'stocklog_activities';
+const APP_STORAGE_KEYS = [STORAGE_KEY_ITEMS, STORAGE_KEY_CATEGORIES, STORAGE_KEY_ACTIVITIES] as const;
+
+const safeParse = <T>(key: string, fallback: T): T => {
+  const raw = localStorage.getItem(key);
+  if (!raw) return fallback;
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch (error) {
+    console.warn(`Corrupted localStorage data found for key: ${key}. Resetting to fallback.`, error);
+    localStorage.removeItem(key);
+    return fallback;
+  }
+};
 
 const LEGACY_CATEGORY_MIGRATION: Record<string, string> = {
   stationery: CATEGORY_IDS.daily,
@@ -98,10 +112,7 @@ const appendIntegrityCleanupActivities = (removedItems: InventoryItem[]): void =
 
 export const storage = {
   getItems: (): InventoryItem[] => {
-    const data = localStorage.getItem(STORAGE_KEY_ITEMS);
-    if (!data) return [];
-
-    const parsedItems: InventoryItem[] = JSON.parse(data);
+    const parsedItems = safeParse<InventoryItem[]>(STORAGE_KEY_ITEMS, []);
     const normalizedItems = normalizeItems(parsedItems);
     const normalizedIds = new Set(normalizedItems.map(item => item.id));
     const removedItems = parsedItems.filter(item => !normalizedIds.has(item.id) && item.isOpened);
@@ -119,10 +130,7 @@ export const storage = {
   },
 
   getCategories: (): Category[] => {
-    const data = localStorage.getItem(STORAGE_KEY_CATEGORIES);
-    if (!data) return DEFAULT_CATEGORIES;
-
-    const parsedCategories: Category[] = JSON.parse(data);
+    const parsedCategories = safeParse<Category[]>(STORAGE_KEY_CATEGORIES, DEFAULT_CATEGORIES);
     const normalizedCategories = normalizeCategories(parsedCategories);
 
     if (JSON.stringify(parsedCategories) !== JSON.stringify(normalizedCategories)) {
@@ -137,8 +145,23 @@ export const storage = {
   },
 
   getActivities: (): ActivityEntry[] => {
-    const data = localStorage.getItem(STORAGE_KEY_ACTIVITIES);
-    return data ? JSON.parse(data) : [];
+    return safeParse<ActivityEntry[]>(STORAGE_KEY_ACTIVITIES, []);
+  },
+
+  clearAppData: (): void => {
+    for (const key of APP_STORAGE_KEYS) {
+      localStorage.removeItem(key);
+    }
+  },
+
+  repairData: (): void => {
+    // Rewrites sanitized snapshots back into storage so malformed data is healed.
+    const items = storage.getItems();
+    const categories = storage.getCategories();
+    const activities = storage.getActivities();
+    storage.setItems(items);
+    storage.setCategories(categories);
+    localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(activities.slice(0, 1000)));
   },
 
   addActivity: (activity: Omit<ActivityEntry, 'id' | 'timestamp'>): void => {

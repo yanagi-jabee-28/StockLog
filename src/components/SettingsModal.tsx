@@ -12,6 +12,7 @@ interface Props {
 
 export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [isRecovering, setIsRecovering] = useState(false);
   
   // Handle Escape key and mobile Back gesture
   useModalNavigation(isOpen, onClose);
@@ -67,12 +68,55 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
   };
 
   const handleReset = () => {
-    localStorage.clear();
+    storage.clearAppData();
     storage.setCategories(DEFAULT_CATEGORIES);
     onDataImported();
     setImportStatus('success');
     setShowResetConfirm(false);
     setTimeout(() => setImportStatus('idle'), 2000);
+  };
+
+  const handleBrowserRecovery = async () => {
+    if (isRecovering) return;
+
+    setIsRecovering(true);
+    try {
+      // Keep a downloadable backup before any recovery action.
+      const backup = storage.exportData();
+      const blob = new Blob([backup], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `stocklog_recovery_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Heal malformed app data and force clean browser-side runtime caches.
+      storage.repairData();
+
+      if ('caches' in window) {
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+      }
+
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+
+      onDataImported();
+
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set('_recovery', Date.now().toString());
+      window.location.replace(nextUrl.toString());
+    } catch (error) {
+      console.error('Browser recovery failed:', error);
+      setImportStatus('error');
+      setIsRecovering(false);
+      setTimeout(() => setImportStatus('idle'), 3000);
+    }
   };
 
   return (
@@ -142,13 +186,26 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
               Maintenance
             </label>
             {!showResetConfirm ? (
-              <button
-                onClick={() => setShowResetConfirm(true)}
-                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-rose-50 text-rose-500 hover:bg-rose-100 rounded-2xl transition-all font-bold text-[11px] uppercase tracking-wider"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                Reset All Data
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={handleBrowserRecovery}
+                  disabled={isRecovering}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-2xl transition-all font-bold text-[11px] uppercase tracking-wider disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRecovering ? 'animate-spin' : ''}`} />
+                  {isRecovering ? 'Recovering Browser State...' : 'ブラウザ復旧モード'}
+                </button>
+                <button
+                  onClick={() => setShowResetConfirm(true)}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-rose-50 text-rose-500 hover:bg-rose-100 rounded-2xl transition-all font-bold text-[11px] uppercase tracking-wider"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Reset All Data
+                </button>
+                <p className="text-[10px] text-gray-400 font-semibold leading-relaxed px-1">
+                  復旧モードはバックアップを書き出した後、破損データ修復・キャッシュ削除・再読み込みを実行します。
+                </p>
+              </div>
             ) : (
               <div className="space-y-2 p-2 bg-rose-50 rounded-2xl border border-rose-100 animate-in fade-in zoom-in-95 duration-200">
                 <p className="text-[10px] font-black text-rose-600 text-center uppercase tracking-widest py-2">
