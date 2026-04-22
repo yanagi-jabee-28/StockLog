@@ -83,26 +83,10 @@ const migrateCategoryId = (categoryId: string): string => {
   return LEGACY_CATEGORY_MIGRATION[categoryId] || categoryId;
 };
 
-const normalizeCategories = (categories: Category[]): Category[] => {
-  const normalizedById = new Map<string, Category>();
-  const extras: Category[] = [];
-
-  for (const category of categories) {
-    const migratedCategory = { ...category, id: migrateCategoryId(category.id) };
-
-    if (DEFAULT_CATEGORY_ID_SET.has(migratedCategory.id)) {
-      normalizedById.set(migratedCategory.id, migratedCategory);
-      continue;
-    }
-
-    extras.push(migratedCategory);
-  }
-
-  const normalized = DEFAULT_CATEGORIES.map(defaultCategory => {
-    return normalizedById.get(defaultCategory.id) ?? defaultCategory;
-  });
-
-  return [...normalized, ...extras];
+const normalizeCategories = (_categories: Category[]): Category[] => {
+  // Category labels and order are source-of-truth in DEFAULT_CATEGORIES.
+  // Stored category names/order are intentionally ignored to prevent stale UI labels.
+  return [...DEFAULT_CATEGORIES];
 };
 
 const normalizeItems = (items: InventoryItem[]): InventoryItem[] => {
