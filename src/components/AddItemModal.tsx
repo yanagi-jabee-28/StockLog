@@ -224,9 +224,9 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center p-0 sm:p-6 transition-all">
-      <div className="absolute inset-0" aria-hidden="true" />
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true" />
       
-      <div className="relative w-full max-w-xl bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 md:p-12 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-12 sm:zoom-in-95 duration-300">
+      <div className="relative z-10 w-full max-w-xl bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 md:p-12 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-12 sm:zoom-in-95 duration-300">
         <div className="flex items-start justify-between mb-10">
           <div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight">
@@ -429,8 +429,8 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
 
           {isUnitPickerOpen && (
             <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/45 backdrop-blur-sm p-0 sm:p-6">
-              <div className="absolute inset-0" aria-hidden="true" />
-              <div className="relative w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] bg-white shadow-2xl max-h-[80vh] overflow-hidden animate-in slide-in-from-bottom-10 duration-200">
+              <div className="absolute inset-0 pointer-events-none" aria-hidden="true" />
+              <div className="relative z-10 w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] bg-white shadow-2xl max-h-[80vh] overflow-hidden animate-in slide-in-from-bottom-10 duration-200">
                 <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-gray-100">
                   <div>
                     <h3 className="text-lg font-black text-gray-900 tracking-tight">内容量の単位</h3>

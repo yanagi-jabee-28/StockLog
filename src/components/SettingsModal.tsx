@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, Download, Upload, CheckCircle2, AlertCircle, RefreshCw, Github } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { useModalNavigation } from '../hooks/useModalNavigation';
+import { logError } from '../lib/logger';
 
 interface Props {
   isOpen: boolean;
@@ -110,7 +111,7 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
       nextUrl.searchParams.set('_recovery', Date.now().toString());
       window.location.replace(nextUrl.toString());
     } catch (error) {
-      console.error('Browser recovery failed:', error);
+      logError('Browser recovery failed:', error);
       setImportStatus('error');
       setIsRecovering(false);
       setTimeout(() => setImportStatus('idle'), 3000);
@@ -119,9 +120,9 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="absolute inset-0" aria-hidden="true" />
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true" />
       
-      <div className="relative w-full max-w-sm bg-white rounded-[2.5rem] p-8 md:p-10 shadow-2xl animate-in zoom-in-95 duration-200">
+      <div className="relative z-10 w-full max-w-sm bg-white rounded-[2.5rem] p-8 md:p-10 shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex items-start justify-between mb-10">
           <div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight">Settings</h2>

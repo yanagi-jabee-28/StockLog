@@ -7,6 +7,8 @@ import {
   updateItemWithGroupSync,
 } from '../lib/itemSync';
 import { buildPriceHistoryEntry, normalizePriceItem } from '../lib/price';
+import { generateId } from '../lib/id';
+import { logInfo, logWarn } from '../lib/logger';
 
 const withPriceMetadata = (item: InventoryItem): InventoryItem => normalizePriceItem(item);
 
@@ -69,7 +71,7 @@ export function useInventory() {
   const addItem = useCallback((item: Omit<InventoryItem, 'id' | 'createdAt'>) => {
     const newItem = { 
       ...item, 
-      id: crypto.randomUUID(),
+      id: generateId(),
       createdAt: new Date().toISOString()
     };
     saveItems([...items, withPriceMetadata(newItem)]);
@@ -139,8 +141,12 @@ export function useInventory() {
   }, [items, saveItems, refreshActivities]);
 
   const deleteItem = useCallback((id: string) => {
+    logInfo('deleteItem called', { id, itemCount: items.length });
     const target = items.find(i => i.id === id);
-    if (!target) return;
+    if (!target) {
+      logWarn('deleteItem target not found', { id, itemCount: items.length });
+      return;
+    }
 
     const linkedOpenedItems = target.isOpened
       ? []
@@ -148,6 +154,12 @@ export function useInventory() {
 
     const linkedOpenedIds = new Set(linkedOpenedItems.map(item => item.id));
     const newItems = items.filter(item => item.id !== id && !linkedOpenedIds.has(item.id));
+    logInfo('deleteItem resolved removal set', {
+      id,
+      linkedOpenedCount: linkedOpenedItems.length,
+      beforeCount: items.length,
+      afterCount: newItems.length,
+    });
 
     saveItems(newItems);
 
@@ -182,7 +194,7 @@ export function useInventory() {
     // 2. Create a NEW unique item instance for the "Opened" version
     const openedItem: InventoryItem = {
       ...sourceItem,
-      id: crypto.randomUUID(), 
+      id: generateId(), 
       stock: 1,
       isOpened: true,
       categoryId: sourceItem.categoryId,

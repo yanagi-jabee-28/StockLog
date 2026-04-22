@@ -21,6 +21,7 @@ import { InventoryItem, ActivityType } from './types';
 import { useModalNavigation } from './hooks/useModalNavigation';
 import { ACTIVITY_META, APP_LAST_UPDATED, CATEGORY_IDS } from './constants';
 import { compareByExpiryThenName } from './lib/alerts';
+import { logError, logInfo, logWarn } from './lib/logger';
 
 const ACTIVITY_ICONS: Record<ActivityType, LucideIcon> = {
   added: Plus,
@@ -94,8 +95,12 @@ export default function App() {
   };
 
   const handleDeleteItem = (id: string) => {
+    logInfo('Delete requested from UI', { id });
     const target = items.find(item => item.id === id);
-    if (!target) return;
+    if (!target) {
+      logWarn('Delete target not found when opening confirmation', { id, itemCount: items.length });
+      return;
+    }
 
     const linkedOpenedCount = target.isOpened
       ? 0
@@ -105,12 +110,22 @@ export default function App() {
       item: target,
       linkedOpenedCount,
     });
+    logInfo('Delete confirmation opened', { id, linkedOpenedCount, isOpened: !!target.isOpened });
   };
 
   const handleConfirmDelete = () => {
-    if (!deleteConfirmState) return;
-    deleteItem(deleteConfirmState.item.id);
-    setDeleteConfirmState(null);
+    if (!deleteConfirmState) {
+      logWarn('Delete confirm clicked without confirmation state');
+      return;
+    }
+
+    try {
+      logInfo('Delete confirmed', { id: deleteConfirmState.item.id });
+      deleteItem(deleteConfirmState.item.id);
+      setDeleteConfirmState(null);
+    } catch (error) {
+      logError('Delete execution failed in App', error);
+    }
   };
 
   const handleCloseAddModal = () => {
@@ -609,9 +624,9 @@ export default function App() {
         <div
           className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
         >
-          <div className="absolute inset-0" aria-hidden="true" />
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true" />
           <div
-            className="bg-white rounded-t-[2rem] sm:rounded-3xl p-7 sm:p-8 w-full sm:max-w-md shadow-2xl animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-200"
+            className="relative z-10 bg-white rounded-t-[2rem] sm:rounded-3xl p-7 sm:p-8 w-full sm:max-w-md shadow-2xl animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}
           >
             <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.18em] mb-2">Delete Confirmation</p>
@@ -649,8 +664,8 @@ export default function App() {
 
       {editingActivity && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="absolute inset-0" aria-hidden="true" />
-          <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true" />
+          <div className="relative z-10 bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-black text-gray-900 mb-6 tracking-tight">履歴を編集</h3>
             <form onSubmit={handleEditActivitySubmit} className="space-y-6">
               <div>

@@ -1,6 +1,8 @@
 import { Category, InventoryItem, ActivityEntry } from '../types';
 import { CATEGORY_IDS, DEFAULT_CATEGORIES } from '../constants';
 import { normalizePriceItem } from './price';
+import { generateId } from './id';
+import { logError, logWarn } from './logger';
 
 const STORAGE_KEY_ITEMS = 'stocklog_items';
 const STORAGE_KEY_CATEGORIES = 'stocklog_categories';
@@ -16,7 +18,7 @@ const safeParse = <T>(key: string, fallback: T): T => {
   try {
     return JSON.parse(raw) as T;
   } catch (error) {
-    console.warn(`Corrupted localStorage data found for key: ${key}. Resetting to fallback.`, error);
+    logWarn(`Corrupted localStorage data found for key: ${key}. Resetting to fallback.`, error);
     localStorage.removeItem(key);
     return fallback;
   }
@@ -26,7 +28,7 @@ const safeParseValue = <T>(raw: string, fallback: T): T => {
   try {
     return JSON.parse(raw) as T;
   } catch (error) {
-    console.warn('Corrupted JSON payload encountered. Using fallback value instead.', error);
+    logWarn('Corrupted JSON payload encountered. Using fallback value instead.', error);
     return fallback;
   }
 };
@@ -142,7 +144,7 @@ const appendIntegrityCleanupActivities = (removedItems: InventoryItem[]): void =
   const now = new Date().toISOString();
 
   const repairActivities: ActivityEntry[] = removedItems.map(item => ({
-    id: crypto.randomUUID(),
+    id: generateId(),
     itemId: item.id,
     itemName: item.name,
     type: 'deleted',
@@ -249,7 +251,7 @@ export const storage = {
 
     const newActivity: ActivityEntry = {
       ...activity,
-      id: crypto.randomUUID(),
+      id: generateId(),
       timestamp: now.toISOString()
     };
     const updatedActivities = [newActivity, ...activities].slice(0, 1000);
@@ -336,7 +338,7 @@ export const storage = {
 
       return true;
     } catch (e) {
-      console.error('Failed to import data:', e);
+      logError('Failed to import data:', e);
       return false;
     }
   }
