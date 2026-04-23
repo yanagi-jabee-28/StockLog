@@ -84,6 +84,35 @@ export default function App() {
   useModalNavigation(!!deleteConfirmState, () => setDeleteConfirmState(null));
   useModalNavigation(isCategoryPickerOpen, () => setIsCategoryPickerOpen(false));
 
+  useEffect(() => {
+    if (!('Notification' in window)) {
+      logInfo('This browser does not support desktop notification');
+      return;
+    }
+
+    const showNotification = () => {
+      // To prevent spamming on every reload during development
+      const hasNotified = sessionStorage.getItem('has_notified_this_session');
+      if (!hasNotified) {
+        new Notification('StockLog', {
+          body: 'アプリを開きました（通知テスト）',
+          icon: '/icon.svg'
+        });
+        sessionStorage.setItem('has_notified_this_session', 'true');
+      }
+    };
+
+    if (Notification.permission === 'granted') {
+      showNotification();
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+          showNotification();
+        }
+      });
+    }
+  }, []);
+
   const handleEditItem = (item: InventoryItem) => {
     setIsDuplicateMode(false);
     setEditingItem(item);
