@@ -38,7 +38,7 @@ GitHub: https://github.com/yanagi-jabee-28/StockLog
 5. **同名ロット管理**:
   同じ商品名の在庫はアコーディオンで束ねて表示。内容量・期限が異なるロットを見分けながら開封順を決められます。
 
-## 🧪 ローカル検証とPages差分の注意点
+##  ローカル検証とPages差分の注意点
 
 - **データ保存先が別になる**:
   本アプリは `localStorage` を使うため、`http://localhost:3000`（または3001）と `https://yanagi-jabee-28.github.io/StockLog/` は別オリジンとして扱われます。片方で登録した在庫は、もう片方には自動共有されません。
