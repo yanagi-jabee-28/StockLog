@@ -42,6 +42,10 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
   const [isUnitPickerOpen, setIsUnitPickerOpen] = useState(false);
   const contentAmountRepeatRef = useRef<number | null>(null);
   const contentAmountLongPressRef = useRef<number | null>(null);
+  const stockRepeatRef = useRef<number | null>(null);
+  const stockLongPressRef = useRef<number | null>(null);
+  const alertRepeatRef = useRef<number | null>(null);
+  const alertLongPressRef = useRef<number | null>(null);
 
   // Derive unique suggestions from existing items
   const suggestions = useMemo(() => {
@@ -107,6 +111,30 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
     }
   };
 
+  const clearStockTimers = () => {
+    if (stockLongPressRef.current !== null) {
+      window.clearTimeout(stockLongPressRef.current);
+      stockLongPressRef.current = null;
+    }
+
+    if (stockRepeatRef.current !== null) {
+      window.clearInterval(stockRepeatRef.current);
+      stockRepeatRef.current = null;
+    }
+  };
+
+  const clearAlertTimers = () => {
+    if (alertLongPressRef.current !== null) {
+      window.clearTimeout(alertLongPressRef.current);
+      alertLongPressRef.current = null;
+    }
+
+    if (alertRepeatRef.current !== null) {
+      window.clearInterval(alertRepeatRef.current);
+      alertRepeatRef.current = null;
+    }
+  };
+
   const changeContentAmountBy = (delta: number) => {
     setContentAmount(current => {
       const currentValue = parseFloat(current) || 0;
@@ -128,6 +156,40 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
 
   const stopContentAmountAdjust = () => {
     clearContentAmountTimers();
+  };
+
+  const startStockAdjust = (delta: number) => {
+    if (delta < 0 && (parseInt(stock) || 0) <= 0) return;
+
+    clearStockTimers();
+    changeStockBy(delta);
+
+    stockLongPressRef.current = window.setTimeout(() => {
+      stockRepeatRef.current = window.setInterval(() => {
+        changeStockBy(delta);
+      }, 120);
+    }, 320);
+  };
+
+  const stopStockAdjust = () => {
+    clearStockTimers();
+  };
+
+  const startAlertAdjust = (delta: number) => {
+    if (delta < 0 && (parseInt(alertThreshold) || 0) <= 0) return;
+
+    clearAlertTimers();
+    changeAlertThresholdBy(delta);
+
+    alertLongPressRef.current = window.setTimeout(() => {
+      alertRepeatRef.current = window.setInterval(() => {
+        changeAlertThresholdBy(delta);
+      }, 120);
+    }, 320);
+  };
+
+  const stopAlertAdjust = () => {
+    clearAlertTimers();
   };
 
   const handleSelectContentUnit = (selectedUnit: string) => {
@@ -169,6 +231,8 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
   useEffect(() => {
     return () => {
       clearContentAmountTimers();
+      clearStockTimers();
+      clearAlertTimers();
     };
   }, []);
 
@@ -226,13 +290,13 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center p-0 sm:p-6 transition-all">
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true" />
       
-      <div className="relative z-10 w-full max-w-xl bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 md:p-12 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-12 sm:zoom-in-95 duration-300">
-        <div className="flex items-start justify-between mb-10">
+      <div className="relative z-10 w-full max-w-2xl bg-white rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 md:p-10 shadow-2xl max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-12 sm:zoom-in-95 duration-300">
+        <div className="flex items-start justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+            <h2 className="text-2xl sm:text-[2rem] font-black text-gray-900 tracking-tight leading-tight">
               {isDuplicate ? 'Add Another Batch' : editItem ? 'Edit Item' : 'Add New Item'}
             </h2>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1 leading-relaxed">
               {isDuplicate ? '別ロット・在庫を追加' : editItem ? 'アイテム情報の編集' : 'アイテムの新規登録'}
             </p>
           </div>
@@ -308,7 +372,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
             <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
               カテゴリ
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {categories.map(cat => (
                 <button
                   key={cat.id}
@@ -339,18 +403,18 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
             </p>
           </div>
 
-          <div className="space-y-4 rounded-[1.5rem] border border-gray-100 bg-gray-50/70 p-5">
-            <div className="flex items-center justify-between gap-3">
+          <div className="space-y-4 rounded-[1.5rem] border border-gray-100 bg-gray-50/70 p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
               <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">
                 価格情報
               </label>
               {getUnitPrice() !== null && (
-                <span className="text-[10px] font-black text-violet-600 uppercase tracking-wider">
+                <span className="text-[10px] font-black text-violet-600 uppercase tracking-wider whitespace-nowrap">
                   単価 ¥{getUnitPrice()}
                 </span>
               )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
                   購入価格
@@ -365,7 +429,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
                   placeholder="例: 298"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
                     内容量
@@ -380,17 +444,17 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
                       className="w-full pl-5 pr-14 py-4 bg-white border border-gray-100 rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-right text-xl font-mono font-bold text-gray-900"
                       placeholder="例: 500"
                     />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col overflow-hidden rounded-[0.85rem] border border-gray-100 bg-gray-50 shadow-sm">
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col overflow-hidden rounded-[1rem] border border-gray-100 bg-white shadow-sm">
                       <button
                         type="button"
                         onPointerDown={() => startContentAmountAdjust(1)}
                         onPointerUp={stopContentAmountAdjust}
                         onPointerLeave={stopContentAmountAdjust}
                         onPointerCancel={stopContentAmountAdjust}
-                        className="flex h-6 w-9 items-center justify-center text-gray-500 hover:bg-white hover:text-gray-900 transition-colors"
+                        className="flex h-8 w-10 items-center justify-center bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-200"
                         aria-label="内容量を1増やす"
                       >
-                        <ChevronUp className="w-3.5 h-3.5" />
+                        <ChevronUp className="w-4 h-4" />
                       </button>
                       <div className="h-px bg-gray-100" />
                       <button
@@ -399,10 +463,10 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
                         onPointerUp={stopContentAmountAdjust}
                         onPointerLeave={stopContentAmountAdjust}
                         onPointerCancel={stopContentAmountAdjust}
-                        className="flex h-6 w-9 items-center justify-center text-gray-500 hover:bg-white hover:text-gray-900 transition-colors"
+                        className="flex h-8 w-10 items-center justify-center bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-200"
                         aria-label="内容量を1減らす"
                       >
-                        <ChevronDown className="w-3.5 h-3.5" />
+                        <ChevronDown className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -414,7 +478,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
                   <button
                     type="button"
                     onClick={() => setIsUnitPickerOpen(true)}
-                    className="w-full px-4 py-4 bg-white border border-gray-100 rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-center text-lg font-bold text-gray-900 shadow-sm"
+                    className="w-full px-4 py-4 bg-white border border-gray-100 rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-center text-base sm:text-lg font-bold text-gray-900 shadow-sm min-h-[3.75rem]"
                     aria-label="内容量の単位を選択"
                   >
                     {selectedContentUnitGroup ? `${selectedContentUnitGroup.label} / ${contentUnit}` : contentUnit}
@@ -506,67 +570,85 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-3 lg:gap-4">
             <div>
               <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
                 {editItem ? '現在庫数' : '初期在庫数'}
               </label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => changeStockBy(-1)}
-                  disabled={(parseInt(stock) || 0) <= 0}
-                  className="h-14 w-14 shrink-0 rounded-[1.25rem] bg-white border border-gray-100 text-gray-500 font-black text-xl shadow-sm hover:bg-gray-50 hover:text-gray-900 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  aria-label="在庫を1減らす"
-                >
-                  -
-                </button>
+              <div className="relative">
                 <input
                   type="number"
                   min="0"
                   value={stock}
                   onChange={e => setStock(e.target.value)}
-                  className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-center text-2xl font-mono font-bold text-gray-900"
+                  className="w-full px-5 pr-16 py-4 bg-gray-50 border border-transparent rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-right text-2xl font-mono font-bold text-gray-900"
                 />
-                <button
-                  type="button"
-                  onClick={() => changeStockBy(1)}
-                  className="h-14 w-14 shrink-0 rounded-[1.25rem] bg-gray-900 text-white font-black text-xl shadow-sm hover:bg-black transition-all"
-                  aria-label="在庫を1増やす"
-                >
-                  +
-                </button>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col overflow-hidden rounded-[1rem] border border-gray-100 bg-white shadow-sm">
+                  <button
+                    type="button"
+                    onPointerDown={() => startStockAdjust(1)}
+                    onPointerUp={stopStockAdjust}
+                    onPointerLeave={stopStockAdjust}
+                    onPointerCancel={stopStockAdjust}
+                    className="flex h-9 w-11 items-center justify-center bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-200"
+                    aria-label="在庫を1増やす"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </button>
+                  <div className="h-px bg-gray-100" />
+                  <button
+                    type="button"
+                    onPointerDown={() => startStockAdjust(-1)}
+                    onPointerUp={stopStockAdjust}
+                    onPointerLeave={stopStockAdjust}
+                    onPointerCancel={stopStockAdjust}
+                    disabled={(parseInt(stock) || 0) <= 0}
+                    className="flex h-9 w-11 items-center justify-center bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                    aria-label="在庫を1減らす"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
             <div>
               <label className="block text-[10px] font-bold text-gray-400 mb-2.5 uppercase tracking-widest pl-1">
                 通知 (在庫)
               </label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => changeAlertThresholdBy(-1)}
-                  disabled={(parseInt(alertThreshold) || 0) <= 0}
-                  className="h-14 w-14 shrink-0 rounded-[1.25rem] bg-white border border-gray-100 text-rose-400 font-black text-xl shadow-sm hover:bg-rose-50 hover:text-rose-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  aria-label="通知在庫数を1減らす"
-                >
-                  -
-                </button>
+              <div className="relative">
                 <input
                   type="number"
                   min="0"
                   value={alertThreshold}
                   onChange={e => setAlertThreshold(e.target.value)}
-                  className="w-full px-5 py-4 bg-gray-50 border border-transparent rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-center text-2xl font-mono font-bold text-rose-500"
+                  className="w-full px-5 pr-16 py-4 bg-gray-50 border border-transparent rounded-[1.25rem] focus:bg-white focus:border-gray-200 outline-none transition-all text-right text-2xl font-mono font-bold text-rose-500"
                 />
-                <button
-                  type="button"
-                  onClick={() => changeAlertThresholdBy(1)}
-                  className="h-14 w-14 shrink-0 rounded-[1.25rem] bg-rose-500 text-white font-black text-xl shadow-sm hover:bg-rose-600 transition-all"
-                  aria-label="通知在庫数を1増やす"
-                >
-                  +
-                </button>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col overflow-hidden rounded-[1rem] border border-gray-100 bg-white shadow-sm">
+                  <button
+                    type="button"
+                    onPointerDown={() => startAlertAdjust(1)}
+                    onPointerUp={stopAlertAdjust}
+                    onPointerLeave={stopAlertAdjust}
+                    onPointerCancel={stopAlertAdjust}
+                    className="flex h-9 w-11 items-center justify-center bg-white text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors focus:outline-none focus:ring-2 focus:ring-rose-200"
+                    aria-label="通知在庫数を1増やす"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </button>
+                  <div className="h-px bg-gray-100" />
+                  <button
+                    type="button"
+                    onPointerDown={() => startAlertAdjust(-1)}
+                    onPointerUp={stopAlertAdjust}
+                    onPointerLeave={stopAlertAdjust}
+                    onPointerCancel={stopAlertAdjust}
+                    disabled={(parseInt(alertThreshold) || 0) <= 0}
+                    className="flex h-9 w-11 items-center justify-center bg-white text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors focus:outline-none focus:ring-2 focus:ring-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                    aria-label="通知在庫数を1減らす"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
             <div>

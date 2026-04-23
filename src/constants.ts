@@ -27,18 +27,18 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: CATEGORY_IDS.beverage, name: '🥤 飲料・嗜好品' },
   { id: CATEGORY_IDS.daily, name: '🧻 日用消耗品' },
   { id: CATEGORY_IDS.beauty, name: '💄 コスメ・美容ケア' },
-  { id: CATEGORY_IDS.utility, name: '🔧 住設・家電消耗品' },
-  { id: CATEGORY_IDS.furniture, name: '🪑 家具・インテリア' },
-  { id: CATEGORY_IDS.emergency, name: '🧰 防災・備蓄' },
+  { id: CATEGORY_IDS.healthcare, name: '🩺 医療・ヘルスケア' },
   { id: CATEGORY_IDS.wardrobe, name: '👕 衣類・ワードローブ' },
   { id: CATEGORY_IDS.innerwear, name: '🧦 インナー・靴下' },
   { id: CATEGORY_IDS.accessories, name: '👟 靴・服飾雑貨' },
   { id: CATEGORY_IDS.seasonal, name: '🧥 季節もの・保管衣類' },
-  { id: CATEGORY_IDS.healthcare, name: '🩺 医療・ヘルスケア' },
+  { id: CATEGORY_IDS.utility, name: '🔧 住設・家電消耗品' },
   { id: CATEGORY_IDS.hobby, name: '🎨 趣味・探求' },
+  { id: CATEGORY_IDS.furniture, name: '🪑 家具・インテリア' },
+  { id: CATEGORY_IDS.emergency, name: '🧰 防災・備蓄' },
 ];
 
-export const APP_LAST_UPDATED = '2026/04/23 09:42';
+export const APP_LAST_UPDATED = '2026/04/23 10:35';
 
 export const EXPIRY_CATEGORY_IDS = [
   CATEGORY_IDS.fresh,

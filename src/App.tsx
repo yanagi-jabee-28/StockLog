@@ -240,7 +240,17 @@ export default function App() {
         </div>
         
         <div className="px-6 pb-2 overflow-y-auto">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-6 px-4">Categories</p>
+          <div className="mb-4 px-4 flex items-center justify-between gap-2">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Categories</p>
+            <button
+              onClick={() => setIsCategoryPickerOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-600 shadow-sm hover:border-gray-300 hover:text-gray-900 transition-all"
+              aria-label="カテゴリ一覧を開く"
+            >
+              <Grid2x2 className="w-3 h-3" />
+              一覧表示
+            </button>
+          </div>
           <div className="flex flex-col gap-1">
             {categories.map((category) => (
               <button
@@ -367,13 +377,13 @@ export default function App() {
       </header>
 
       {isCategoryPickerOpen && (
-        <div className="md:hidden fixed inset-0 z-[55] flex items-end justify-center bg-black/45 backdrop-blur-sm p-0">
+        <div className="fixed inset-0 z-[55] flex items-end md:items-center justify-center bg-black/45 backdrop-blur-sm p-0 md:p-6">
           <div
             className="absolute inset-0"
             aria-hidden="true"
             onClick={() => setIsCategoryPickerOpen(false)}
           />
-          <div className="relative z-10 w-full rounded-t-[2rem] bg-white shadow-2xl animate-in slide-in-from-bottom-8 duration-200">
+          <div className="relative z-10 w-full md:max-w-3xl rounded-t-[2rem] md:rounded-[2rem] bg-white shadow-2xl animate-in slide-in-from-bottom-8 md:zoom-in-95 duration-200">
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
               <div>
                 <h3 className="text-lg font-black text-gray-900 tracking-tight">カテゴリ一覧</h3>
@@ -389,8 +399,8 @@ export default function App() {
               </button>
             </div>
 
-            <div className="px-4 pt-4 pb-6 max-h-[72vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-2">
+            <div className="px-4 md:px-6 pt-4 pb-6 max-h-[72vh] overflow-y-auto">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
                 {categories.map((category) => (
                   <button
                     key={category.id}
@@ -399,10 +409,10 @@ export default function App() {
                       setActiveCategoryId(category.id);
                       setIsCategoryPickerOpen(false);
                     }}
-                    className={`min-h-12 rounded-2xl border px-3 py-2 text-left text-[11px] font-bold leading-tight transition-all ${
+                    className={`min-h-12 md:min-h-14 rounded-2xl border px-3 py-2.5 text-left text-[11px] md:text-xs font-bold leading-tight transition-all ${
                       activeCategoryId === category.id
                         ? 'bg-gray-900 text-white border-gray-900 shadow-md'
-                        : 'bg-white text-gray-500 border-gray-100'
+                        : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300 hover:text-gray-700'
                     }`}
                     title={category.name}
                   >
@@ -415,10 +425,10 @@ export default function App() {
                     setActiveCategoryId('history');
                     setIsCategoryPickerOpen(false);
                   }}
-                  className={`min-h-12 rounded-2xl border px-3 py-2 text-left text-[11px] font-bold leading-tight transition-all ${
+                  className={`min-h-12 md:min-h-14 rounded-2xl border px-3 py-2.5 text-left text-[11px] md:text-xs font-bold leading-tight transition-all ${
                     activeCategoryId === 'history'
                       ? 'bg-gray-900 text-white border-gray-900 shadow-md'
-                      : 'bg-white text-gray-500 border-gray-100'
+                      : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300 hover:text-gray-700'
                   }`}
                 >
                   History Log
