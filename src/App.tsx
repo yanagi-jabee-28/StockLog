@@ -80,9 +80,9 @@ export default function App() {
   } | null>(null);
 
   // Handle Escape key and mobile Back gesture for activity edit
-  useModalNavigation(!!editingActivity, () => setEditingActivity(null));
-  useModalNavigation(!!deleteConfirmState, () => setDeleteConfirmState(null));
-  useModalNavigation(isCategoryPickerOpen, () => setIsCategoryPickerOpen(false));
+  useModalNavigation(!!editingActivity, () => setEditingActivity(null), 'activity-edit-modal');
+  useModalNavigation(!!deleteConfirmState, () => setDeleteConfirmState(null), 'delete-confirm-modal');
+  useModalNavigation(isCategoryPickerOpen, () => setIsCategoryPickerOpen(false), 'category-picker-modal');
 
 
 

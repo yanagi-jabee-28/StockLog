@@ -115,7 +115,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
   };
 
   // Handle Escape key and mobile Back gesture
-  useModalNavigation(isOpen, handleRequestClose);
+  useModalNavigation(isOpen, handleRequestClose, 'add-item-modal');
 
   // Derive unique suggestions from existing items
   const suggestions = useMemo(() => {

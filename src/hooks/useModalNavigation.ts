@@ -5,7 +5,11 @@ export type ModalCloseReason = 'escape' | 'popstate';
 /**
  * Hook to handle closing modals with Escape key and mobile Back gesture.
  */
-export function useModalNavigation(isOpen: boolean, onClose: (reason: ModalCloseReason) => void) {
+export function useModalNavigation(
+  isOpen: boolean,
+  onClose: (reason: ModalCloseReason) => void,
+  modalId = 'modal'
+) {
   useEffect(() => {
     if (!isOpen) return;
 
@@ -17,7 +21,7 @@ export function useModalNavigation(isOpen: boolean, onClose: (reason: ModalClose
 
     // Handle Mobile Back Gesture (Android etc.)
     // We push a state so the back button pops it instead of leaving the app
-    const modalState = { modalOpen: true };
+    const modalState = { modalOpen: modalId };
     window.history.pushState(modalState, '');
 
     const handlePopState = () => {
@@ -35,9 +39,9 @@ export function useModalNavigation(isOpen: boolean, onClose: (reason: ModalClose
       // If we are closing the modal but NOT via popstate (e.g. click close button),
       // we should remove the added state from history to keep it clean.
       // We check if the current state is the one we pushed.
-      if (window.history.state?.modalOpen) {
+      if (window.history.state?.modalOpen === modalId) {
         window.history.back();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, modalId, onClose]);
 }

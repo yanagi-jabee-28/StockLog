@@ -15,7 +15,7 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
   const [isRecovering, setIsRecovering] = useState(false);
   
   // Handle Escape key and mobile Back gesture
-  useModalNavigation(isOpen, onClose);
+  useModalNavigation(isOpen, () => onClose(), 'settings-modal');
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
