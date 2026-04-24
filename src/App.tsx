@@ -713,8 +713,9 @@ export default function App() {
       {deleteConfirmState && (
         <div
           className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setDeleteConfirmState(null)}
         >
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true" />
+          <div className="absolute inset-0" aria-hidden="true" />
           <div
             className="relative z-10 bg-white rounded-t-[2rem] sm:rounded-3xl p-7 sm:p-8 w-full sm:max-w-md shadow-2xl animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}
@@ -753,8 +754,11 @@ export default function App() {
       )}
 
       {editingActivity && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true" />
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setEditingActivity(null)}
+        >
+          <div className="absolute inset-0" aria-hidden="true" />
           <div className="relative z-10 bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-black text-gray-900 mb-6 tracking-tight">履歴を編集</h3>
             <form onSubmit={handleEditActivitySubmit} className="space-y-6">

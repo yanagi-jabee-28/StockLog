@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useLayoutEffect, useMemo, useRef } from 'react';
 import { Category, InventoryItem } from '../types';
 import { X, Search, BoxSelect, FileText, ChevronUp, ChevronDown } from 'lucide-react';
 import { useModalNavigation } from '../hooks/useModalNavigation';
@@ -24,9 +24,6 @@ const UNIT_GROUPS = [
 
 export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit, initialCategory, editItem, isDuplicate }: Props) {
   const [name, setName] = useState('');
-  
-  // Handle Escape key and mobile Back gesture
-  useModalNavigation(isOpen, onClose);
 
   const [categoryId, setCategoryId] = useState(initialCategory);
   const [stock, setStock] = useState('0');
@@ -46,6 +43,66 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
   const stockLongPressRef = useRef<number | null>(null);
   const alertRepeatRef = useRef<number | null>(null);
   const alertLongPressRef = useRef<number | null>(null);
+
+  const initialFormState = useMemo(() => {
+    if (editItem) {
+      return {
+        name: editItem.name,
+        categoryId: editItem.categoryId,
+        stock: editItem.stock.toString(),
+        unit: '個',
+        purchasePrice: editItem.purchasePrice?.toString() || '',
+        contentAmount: editItem.contentAmount?.toString() || '',
+        contentUnit: editItem.contentUnit || editItem.unit,
+        alertThreshold: editItem.alertThreshold.toString(),
+        alertThresholdPercent: (editItem.alertThresholdPercent ?? 20).toString(),
+        expiryDate: editItem.expiryDate || '',
+        notes: editItem.notes || '',
+      };
+    }
+
+    return {
+      name: '',
+      categoryId: initialCategory,
+      stock: '0',
+      unit: '個',
+      purchasePrice: '',
+      contentAmount: '',
+      contentUnit: '個',
+      alertThreshold: '1',
+      alertThresholdPercent: '20',
+      expiryDate: '',
+      notes: '',
+    };
+  }, [editItem, initialCategory]);
+
+  const hasUnsavedChanges =
+    name !== initialFormState.name ||
+    categoryId !== initialFormState.categoryId ||
+    stock !== initialFormState.stock ||
+    unit !== initialFormState.unit ||
+    purchasePrice !== initialFormState.purchasePrice ||
+    contentAmount !== initialFormState.contentAmount ||
+    contentUnit !== initialFormState.contentUnit ||
+    alertThreshold !== initialFormState.alertThreshold ||
+    alertThresholdPercent !== initialFormState.alertThresholdPercent ||
+    expiryDate !== initialFormState.expiryDate ||
+    notes !== initialFormState.notes;
+
+  const handleRequestClose = useCallback(() => {
+    if (!hasUnsavedChanges) {
+      onClose();
+      return;
+    }
+
+    const shouldClose = window.confirm('保存していない変更があります。閉じてもよろしいですか？');
+    if (shouldClose) {
+      onClose();
+    }
+  }, [hasUnsavedChanges, onClose]);
+
+  // Handle Escape key and mobile Back gesture
+  useModalNavigation(isOpen, handleRequestClose);
 
   // Derive unique suggestions from existing items
   const suggestions = useMemo(() => {
@@ -301,7 +358,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
             </p>
           </div>
           <button 
-            onClick={onClose}
+            onClick={handleRequestClose}
             aria-label="閉じる"
             className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 text-white shadow-lg shadow-gray-200 border border-gray-800 hover:bg-black hover:scale-105 transition-all focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
           >

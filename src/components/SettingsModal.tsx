@@ -119,10 +119,16 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true" />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0" aria-hidden="true" />
       
-      <div className="relative z-10 w-full max-w-sm bg-white rounded-[2.5rem] p-8 md:p-10 shadow-2xl animate-in zoom-in-95 duration-200">
+      <div
+        className="relative z-10 w-full max-w-sm bg-white rounded-[2.5rem] p-8 md:p-10 shadow-2xl animate-in zoom-in-95 duration-200"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex items-start justify-between mb-10">
           <div>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight">Settings</h2>
