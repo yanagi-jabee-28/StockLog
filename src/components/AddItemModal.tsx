@@ -373,7 +373,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
             </p>
           </div>
           <button 
-            onClick={handleRequestClose}
+            onClick={() => handleRequestClose()}
             aria-label="閉じる"
             className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 text-white shadow-lg shadow-gray-200 border border-gray-800 hover:bg-black hover:scale-105 transition-all focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
           >
