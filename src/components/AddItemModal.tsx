@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState, useLayoutEffect, useMemo, useRef } from 'react';
 import { Category, InventoryItem } from '../types';
 import { X, Search, BoxSelect, FileText, ChevronUp, ChevronDown } from 'lucide-react';
-import { useModalNavigation } from '../hooks/useModalNavigation';
+import { ModalCloseReason, useModalNavigation } from '../hooks/useModalNavigation';
 import { isExpiryCategoryId } from '../constants';
 
 interface Props {
@@ -35,6 +35,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
   const [alertThresholdPercent, setAlertThresholdPercent] = useState('20');
   const [expiryDate, setExpiryDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isUnitPickerOpen, setIsUnitPickerOpen] = useState(false);
   const contentAmountRepeatRef = useRef<number | null>(null);
@@ -89,17 +90,29 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
     expiryDate !== initialFormState.expiryDate ||
     notes !== initialFormState.notes;
 
-  const handleRequestClose = useCallback(() => {
+  const handleRequestClose = useCallback((reason?: ModalCloseReason) => {
     if (!hasUnsavedChanges) {
       onClose();
       return;
     }
 
-    const shouldClose = window.confirm('保存していない変更があります。閉じてもよろしいですか？');
-    if (shouldClose) {
-      onClose();
+    // popstate 由来の閉じる操作をキャンセルした時に、
+    // 次の戻る操作でもモーダルを先に閉じられるよう履歴を再積み上げする。
+    if (reason === 'popstate') {
+      window.history.pushState({ modalOpen: true }, '');
     }
+
+    setShowUnsavedConfirm(true);
   }, [hasUnsavedChanges, onClose]);
+
+  const handleConfirmDiscard = () => {
+    setShowUnsavedConfirm(false);
+    onClose();
+  };
+
+  const handleCancelDiscard = () => {
+    setShowUnsavedConfirm(false);
+  };
 
   // Handle Escape key and mobile Back gesture
   useModalNavigation(isOpen, handleRequestClose);
@@ -268,6 +281,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
         setAlertThresholdPercent((editItem.alertThresholdPercent ?? 20).toString());
         setExpiryDate(editItem.expiryDate || '');
         setNotes(editItem.notes || '');
+        setShowUnsavedConfirm(false);
       } else {
         setName('');
         setCategoryId(initialCategory);
@@ -281,6 +295,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
         setExpiryDate('');
         setNotes('');
         setIsUnitPickerOpen(false);
+        setShowUnsavedConfirm(false);
       }
     }
   }, [isOpen, initialCategory, editItem]);
@@ -745,6 +760,34 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
             </button>
           </div>
         </form>
+
+        {showUnsavedConfirm && (
+          <div className="absolute inset-0 z-20 flex items-end sm:items-center justify-center bg-gray-900/45 backdrop-blur-[2px] p-4 sm:p-6">
+            <div className="w-full max-w-md rounded-[1.75rem] bg-white border border-amber-100 shadow-2xl p-6 sm:p-7 animate-in fade-in zoom-in-95 duration-200">
+              <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.18em] mb-2">Unsaved Changes</p>
+              <h3 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight mb-2">保存していない入力があります</h3>
+              <p className="text-xs sm:text-sm text-gray-500 font-semibold leading-relaxed mb-6">
+                名前・価格・期限・メモなど入力中の内容は保存されません。破棄して閉じますか？
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleCancelDiscard}
+                  className="w-full py-3.5 rounded-2xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-all active:scale-95"
+                >
+                  編集を続ける
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDiscard}
+                  className="w-full py-3.5 rounded-2xl bg-rose-500 text-white font-black hover:bg-rose-600 transition-all active:scale-95"
+                >
+                  破棄して閉じる
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,15 +1,17 @@
 import { useEffect } from 'react';
 
+export type ModalCloseReason = 'escape' | 'popstate';
+
 /**
  * Hook to handle closing modals with Escape key and mobile Back gesture.
  */
-export function useModalNavigation(isOpen: boolean, onClose: () => void) {
+export function useModalNavigation(isOpen: boolean, onClose: (reason: ModalCloseReason) => void) {
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        onClose('escape');
       }
     };
 
@@ -20,7 +22,7 @@ export function useModalNavigation(isOpen: boolean, onClose: () => void) {
 
     const handlePopState = () => {
       // When user swipes back or presses hardware back button
-      onClose();
+      onClose('popstate');
     };
 
     window.addEventListener('keydown', handleKeyDown);
