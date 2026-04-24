@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export type ModalCloseReason = 'escape' | 'popstate';
 
@@ -10,12 +10,18 @@ export function useModalNavigation(
   onClose: (reason: ModalCloseReason) => void,
   modalId = 'modal'
 ) {
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose('escape');
+        onCloseRef.current('escape');
       }
     };
 
@@ -26,7 +32,7 @@ export function useModalNavigation(
 
     const handlePopState = () => {
       // When user swipes back or presses hardware back button
-      onClose('popstate');
+      onCloseRef.current('popstate');
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -43,5 +49,5 @@ export function useModalNavigation(
         window.history.back();
       }
     };
-  }, [isOpen, modalId, onClose]);
+  }, [isOpen, modalId]);
 }
