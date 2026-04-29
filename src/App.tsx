@@ -12,12 +12,16 @@ import {
   Trash2, 
   Gauge,
   Settings2,
+  UtensilsCrossed,
   type LucideIcon
 } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
+import { useMealLog } from './hooks/useMealLog';
 import { InventoryItemCard } from './components/InventoryItemCard';
 import { AddItemModal } from './components/AddItemModal';
 import { SettingsModal } from './components/SettingsModal';
+import { AddMealModal } from './components/AddMealModal';
+import { MealList } from './components/MealList';
 import { InventoryItem, ActivityType } from './types';
 import { useModalNavigation } from './hooks/useModalNavigation';
 import { ACTIVITY_META, APP_LAST_UPDATED, CATEGORY_IDS } from './constants';
@@ -65,11 +69,20 @@ export default function App() {
     clearActivities,
     reloadData
   } = useInventory();
+
+  const {
+    mealLogs,
+    addMealLog,
+    deleteMealLog,
+    updateMealLog,
+  } = useMealLog();
   
+  const [activeTab, setActiveTab] = useState<'stock' | 'meals'>('stock');
   const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || CATEGORY_IDS.fresh);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [isDuplicateMode, setIsDuplicateMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -137,6 +150,11 @@ export default function App() {
     setIsAddModalOpen(false);
     setEditingItem(null);
     setIsDuplicateMode(false);
+  };
+
+  const handleAddMealLog = (mealData: { date: number; name: string; ingredients: string[]; notes: string }) => {
+    addMealLog(mealData);
+    setIsAddMealModalOpen(false);
   };
 
   useEffect(() => {
@@ -277,15 +295,30 @@ export default function App() {
             
             <div className="mt-8 pt-8 border-t border-gray-100">
                <button
-                onClick={() => setActiveCategoryId('history')}
+                onClick={() => {
+                  setActiveTab('stock');
+                  setActiveCategoryId('history');
+                }}
                 className={`text-left px-6 py-4 rounded-2xl text-sm font-bold transition-all flex items-center gap-3 w-full group ${
-                  activeCategoryId === 'history' 
+                  activeTab === 'stock' && activeCategoryId === 'history'
                     ? 'bg-gray-900 text-white shadow-xl shadow-gray-200' 
                     : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
-                <History className={`w-4 h-4 transition-transform ${activeCategoryId === 'history' ? 'scale-110' : 'text-gray-300'}`} />
+                <History className={`w-4 h-4 transition-transform ${activeTab === 'stock' && activeCategoryId === 'history' ? 'scale-110' : 'text-gray-300'}`} />
                 <span>History Log</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('meals')}
+                className={`text-left px-6 py-4 rounded-2xl text-sm font-bold transition-all flex items-center gap-3 w-full group mt-2 ${
+                  activeTab === 'meals'
+                    ? 'bg-gray-900 text-white shadow-xl shadow-gray-200' 
+                    : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <UtensilsCrossed className={`w-4 h-4 transition-transform ${activeTab === 'meals' ? 'scale-110' : 'text-gray-300'}`} />
+                <span>献立記録</span>
               </button>
             </div>
           </div>
@@ -338,6 +371,37 @@ export default function App() {
           最終更新 {APP_LAST_UPDATED}
         </p>
 
+        {/* Tab Navigation */}
+        <div className="mb-4 flex gap-2">
+          <button
+            onClick={() => {
+              setActiveTab('stock');
+              setActiveCategoryId(categories[0]?.id || CATEGORY_IDS.fresh);
+            }}
+            className={`flex-1 px-4 py-2 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all border ${
+              activeTab === 'stock'
+                ? 'bg-gray-900 text-white border-gray-900 shadow-md'
+                : 'bg-white text-gray-400 border-gray-100'
+            }`}
+          >
+            <Boxes className="w-3 h-3 inline mr-1" />
+            在庫
+          </button>
+          <button
+            onClick={() => setActiveTab('meals')}
+            className={`flex-1 px-4 py-2 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all border ${
+              activeTab === 'meals'
+                ? 'bg-gray-900 text-white border-gray-900 shadow-md'
+                : 'bg-white text-gray-400 border-gray-100'
+            }`}
+          >
+            <UtensilsCrossed className="w-3 h-3 inline mr-1" />
+            献立
+          </button>
+        </div>
+
+        {activeTab === 'stock' && (
+        <>
         <div className="mb-3 flex items-center justify-between gap-2">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">カテゴリ</p>
           <button
@@ -376,6 +440,9 @@ export default function App() {
             History
           </button>
         </div>
+        </>
+        )}
+
       </header>
 
       {isCategoryPickerOpen && (
@@ -445,6 +512,23 @@ export default function App() {
       <main className="flex-1 flex flex-col items-center bg-[#fbfbfc] overflow-y-auto relative z-0">
         <div className="w-full max-w-6xl px-4 py-6 md:p-12 shrink-0 mb-28 md:mb-0">
           
+          {activeTab === 'meals' ? (
+            <>
+              {/* Meals View */}
+              <div>
+                <p className="text-[10px] font-bold text-violet-600 uppercase tracking-[0.2em] mb-2">献立記録</p>
+                <h2 className="text-4xl font-black text-gray-900 tracking-tight leading-none uppercase">Meal Logs</h2>
+              </div>
+              <div className="mt-8">
+                <MealList
+                  mealLogs={mealLogs}
+                  onAdd={() => setIsAddMealModalOpen(true)}
+                  onDelete={deleteMealLog}
+                />
+              </div>
+            </>
+          ) : (
+            <>
           {/* Desktop Category Title & Add Button */}
           <div className="hidden md:flex justify-between items-center mb-12 border-b border-gray-100 pb-10">
             <div>
@@ -693,6 +777,8 @@ export default function App() {
               </section>
             </div>
           )}
+            </>
+          )}
         </div>
       </main>
 
@@ -790,6 +876,12 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <AddMealModal 
+        isOpen={isAddMealModalOpen}
+        onClose={() => setIsAddMealModalOpen(false)}
+        onAdd={handleAddMealLog}
+      />
 
       <AddItemModal 
         isOpen={isAddModalOpen} 
