@@ -1,4 +1,4 @@
-import { Category, InventoryItem, ActivityEntry } from '../types';
+import { Category, InventoryItem, ActivityEntry, MealLog } from '../types';
 import { CATEGORY_IDS, DEFAULT_CATEGORIES } from '../constants';
 import { normalizePriceItem } from './price';
 import { generateId } from './id';
@@ -7,6 +7,7 @@ import { logError, logWarn } from './logger';
 const STORAGE_KEY_ITEMS = 'stocklog_items';
 const STORAGE_KEY_CATEGORIES = 'stocklog_categories';
 const STORAGE_KEY_ACTIVITIES = 'stocklog_activities';
+const STORAGE_KEY_MEAL_LOGS = 'stocklog_meal_logs';
 const STORAGE_KEY_META = 'stocklog_meta';
 const APP_STORAGE_KEYS = [STORAGE_KEY_ITEMS, STORAGE_KEY_CATEGORIES, STORAGE_KEY_ACTIVITIES] as const;
 const DEFAULT_CATEGORY_ID_SET = new Set(DEFAULT_CATEGORIES.map(category => category.id));
@@ -332,5 +333,36 @@ export const storage = {
 
   getUpdatedAt: (): string | null => {
     return getUpdatedAtValue();
+  },
+
+  getMealLogs: (): MealLog[] => {
+    return safeParse<MealLog[]>(STORAGE_KEY_MEAL_LOGS, []);
+  },
+
+  setMealLogs: (mealLogs: MealLog[]): void => {
+    localStorage.setItem(STORAGE_KEY_MEAL_LOGS, JSON.stringify(mealLogs));
+    touchUpdatedAt();
+  },
+
+  addMealLog: (mealLog: Omit<MealLog, 'id'>): void => {
+    const mealLogs = storage.getMealLogs();
+    const newMealLog: MealLog = {
+      ...mealLog,
+      id: generateId()
+    };
+    const updatedMealLogs = [newMealLog, ...mealLogs];
+    storage.setMealLogs(updatedMealLogs);
+  },
+
+  deleteMealLog: (id: string): void => {
+    const mealLogs = storage.getMealLogs().filter(log => log.id !== id);
+    storage.setMealLogs(mealLogs);
+  },
+
+  updateMealLog: (id: string, updates: Partial<Omit<MealLog, 'id'>>): void => {
+    const mealLogs = storage.getMealLogs().map(log =>
+      log.id === id ? { ...log, ...updates } : log
+    );
+    storage.setMealLogs(mealLogs);
   }
 };

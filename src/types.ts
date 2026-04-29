@@ -48,6 +48,14 @@ export type ActivityType =
   | 'deleted' 
   | 'edited';
 
+export interface MealLog {
+  id: string;
+  date: number;          // タイムスタンプ（記録日時）
+  name: string;          // 料理名
+  ingredients: string[]; // 使用食材の配列
+  notes: string;         // 調理のプロトコルや実験の記録
+}
+
 export interface ActivityEntry {
   id: string;
   itemId: string;
