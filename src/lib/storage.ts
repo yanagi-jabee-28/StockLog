@@ -79,6 +79,9 @@ const LEGACY_CATEGORY_MIGRATION: Record<string, string> = {
   emergency_stock: CATEGORY_IDS.emergency,
   med_cosme: CATEGORY_IDS.healthcare,
   clothing: CATEGORY_IDS.wardrobe,
+  innerwear: CATEGORY_IDS.wardrobe,
+  accessories: CATEGORY_IDS.wardrobe,
+  seasonal: CATEGORY_IDS.wardrobe,
 };
 
 const migrateCategoryId = (categoryId: string): string => {

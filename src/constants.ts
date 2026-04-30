@@ -12,6 +12,7 @@ export const CATEGORY_IDS = {
   furniture: 'furniture',
   emergency: 'emergency',
   wardrobe: 'wardrobe',
+  // Legacy clothing subcategory IDs kept for migration compatibility.
   innerwear: 'innerwear',
   accessories: 'accessories',
   seasonal: 'seasonal',
@@ -28,17 +29,14 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: CATEGORY_IDS.daily, name: '🧻 日用消耗品' },
   { id: CATEGORY_IDS.beauty, name: '💄 コスメ・美容ケア' },
   { id: CATEGORY_IDS.healthcare, name: '🩺 医療・ヘルスケア' },
-  { id: CATEGORY_IDS.wardrobe, name: '👕 衣類・ワードローブ' },
-  { id: CATEGORY_IDS.innerwear, name: '🧦 インナー・靴下' },
-  { id: CATEGORY_IDS.accessories, name: '👟 靴・服飾雑貨' },
-  { id: CATEGORY_IDS.seasonal, name: '🧥 季節もの・保管衣類' },
+  { id: CATEGORY_IDS.wardrobe, name: '👕 衣類・服飾' },
   { id: CATEGORY_IDS.utility, name: '🔧 住設・家電消耗品' },
   { id: CATEGORY_IDS.hobby, name: '🎨 趣味・探求' },
   { id: CATEGORY_IDS.furniture, name: '🪑 家具・インテリア' },
   { id: CATEGORY_IDS.emergency, name: '🧰 防災・備蓄' },
 ];
 
-export const APP_LAST_UPDATED = '2026/04/30 14:05';
+export const APP_LAST_UPDATED = '2026/04/30 14:35';
 
 export const EXPIRY_CATEGORY_IDS = [
   CATEGORY_IDS.fresh,
@@ -63,7 +61,7 @@ export const OPENED_DAILY_CATEGORY_IDS = [
   CATEGORY_IDS.emergency,
   CATEGORY_IDS.healthcare,
   CATEGORY_IDS.hobby,
-  CATEGORY_IDS.innerwear,
+  CATEGORY_IDS.wardrobe,
 ] as const;
 
 const OPENED_DAILY_CATEGORY_ID_SET = new Set<string>(OPENED_DAILY_CATEGORY_IDS);
