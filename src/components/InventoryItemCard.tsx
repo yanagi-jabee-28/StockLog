@@ -27,7 +27,7 @@ export const InventoryItemCard: React.FC<InventoryItemCardProps> = ({
   onEdit, 
   onDuplicate,
   onArchive, 
-  onUpdateRemaining 
+  onUpdateRemaining,
 }) => {
   const { isPercentAlert, expiryStatus, isAlert } = getItemAlertState(item);
   const priceHistory = item.priceHistory ?? [];

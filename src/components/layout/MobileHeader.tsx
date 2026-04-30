@@ -5,9 +5,9 @@ import { APP_LAST_UPDATED, CATEGORY_IDS } from '../../constants';
 
 interface MobileHeaderProps {
   categories: Category[];
-  activeTab: 'stock' | 'meals';
+  activeTab: 'stock' | 'selection' | 'meals';
   activeCategoryId: string;
-  setActiveTab: (tab: 'stock' | 'meals') => void;
+  setActiveTab: (tab: 'stock' | 'selection' | 'meals') => void;
   setActiveCategoryId: (id: string) => void;
   setIsCategoryPickerOpen: (isOpen: boolean) => void;
   setIsSettingsModalOpen: (isOpen: boolean) => void;

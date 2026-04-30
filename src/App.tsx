@@ -5,6 +5,7 @@ import { useMealLog } from './hooks/useMealLog';
 import { Sidebar } from './components/layout/Sidebar';
 import { MobileHeader } from './components/layout/MobileHeader';
 import { MealView } from './components/features/meals/MealView';
+import { SelectionView } from './components/features/selection/SelectionView';
 import { InventoryView } from './components/features/inventory/InventoryView';
 import { AddItemModal } from './components/AddItemModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -15,6 +16,8 @@ import { InventoryItem } from './types';
 import { useModalNavigation } from './hooks/useModalNavigation';
 import { CATEGORY_IDS } from './constants';
 import { logError, logInfo, logWarn } from './lib/logger';
+import { formatForAi, copyToClipboard } from './lib/clipboard';
+import { Sparkles, Check, Copy } from 'lucide-react';
 
 export default function App() {
   const { 
@@ -42,7 +45,7 @@ export default function App() {
     deleteMealLog,
   } = useMealLog();
   
-  const [activeTab, setActiveTab] = useState<'stock' | 'meals'>('stock');
+  const [activeTab, setActiveTab] = useState<'stock' | 'selection' | 'meals'>('stock');
   const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || CATEGORY_IDS.fresh);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [isDuplicateMode, setIsDuplicateMode] = useState(false);
@@ -54,6 +57,10 @@ export default function App() {
     item: InventoryItem;
     linkedOpenedCount: number;
   } | null>(null);
+
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [showCopyToast, setShowCopyToast] = useState(false);
 
   useModalNavigation(!!deleteConfirmState, () => setDeleteConfirmState(null), 'delete-confirm-modal');
   useModalNavigation(isCategoryPickerOpen, () => setIsCategoryPickerOpen(false), 'category-picker-modal');
@@ -118,6 +125,39 @@ export default function App() {
     setIsAddMealModalOpen(false);
   };
 
+  const handleToggleSelection = (id: string) => {
+    setSelectedItemIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleCopyForAi = async (type: 'selected' | 'all' | 'meals') => {
+    let text = "";
+    if (type === 'selected') {
+      const selectedItems = items.filter(item => selectedItemIds.has(item.id));
+      text = formatForAi(selectedItems, categories, []);
+    } else if (type === 'all') {
+      text = formatForAi(items, categories, []);
+    } else if (type === 'meals') {
+      text = formatForAi([], categories, mealLogs);
+    }
+
+    if (text) {
+      const success = await copyToClipboard(text);
+      if (success) {
+        setShowCopyToast(true);
+        setTimeout(() => setShowCopyToast(false), 2000);
+        if (type === 'selected') {
+          setIsSelectionMode(false);
+          setSelectedItemIds(new Set());
+        }
+      }
+    }
+  };
+
   useEffect(() => {
     if (categories.length === 0) return;
     if (activeCategoryId === 'history') return;
@@ -171,6 +211,16 @@ export default function App() {
               mealLogs={mealLogs}
               setIsAddMealModalOpen={setIsAddMealModalOpen}
               deleteMealLog={deleteMealLog}
+              onCopyRecent={() => handleCopyForAi('meals')}
+            />
+          ) : activeTab === 'selection' ? (
+            <SelectionView
+              items={items}
+              categories={categories}
+              selectedItemIds={selectedItemIds}
+              onToggleSelection={handleToggleSelection}
+              onCopySelected={() => handleCopyForAi('selected')}
+              onClearSelection={() => setSelectedItemIds(new Set())}
             />
           ) : (
             <InventoryView
@@ -197,6 +247,18 @@ export default function App() {
         </div>
       </main>
 
+      {/* Copy Toast */}
+      {showCopyToast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/10 backdrop-blur-md">
+            <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+              <Check className="w-4 h-4 text-white" />
+            </div>
+            <p className="text-sm font-bold tracking-wide">クリップボードにコピーしました</p>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 z-40 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
         <div className="flex items-center justify-around h-16 px-4">
@@ -213,18 +275,35 @@ export default function App() {
             <span className="text-[10px] font-bold">在庫</span>
           </button>
 
+          <button
+            onClick={() => setActiveTab('selection')}
+            className={`flex flex-col items-center justify-center w-16 h-full transition-colors ${
+              activeTab === 'selection' ? 'text-gray-900' : 'text-gray-400'
+            }`}
+          >
+            <div className="relative">
+              <Sparkles className="w-6 h-6 mb-1" />
+              {selectedItemIds.size > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border border-white">
+                  {selectedItemIds.size}
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] font-bold">選択</span>
+          </button>
+
           {/* Center Add Button depending on Tab */}
           <div className="-mt-6">
             <button
               onClick={() => {
-                if (activeTab === 'stock') {
+                if (activeTab === 'stock' || activeTab === 'selection') {
                   setIsAddModalOpen(true);
                 } else {
                   setIsAddMealModalOpen(true);
                 }
               }}
               className="bg-gray-900 text-white w-14 h-14 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all outline-none"
-              aria-label={activeTab === 'stock' ? 'アイテムを追加' : '献立を追加'}
+              aria-label={activeTab === 'stock' || activeTab === 'selection' ? 'アイテムを追加' : '献立を追加'}
             >
               <Plus className="w-7 h-7" />
             </button>

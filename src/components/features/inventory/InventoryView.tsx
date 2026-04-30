@@ -134,6 +134,14 @@ export function InventoryView({
         )}
       </div>
 
+      {/* Mobile Header (Empty space for consistency or category name) */}
+      <div className="md:hidden">
+         <p className="text-[10px] font-bold text-violet-600 uppercase tracking-[0.2em] mb-2">Current Category</p>
+         <h2 className="text-4xl font-black text-gray-900 tracking-tight leading-none uppercase">
+            {activeCategoryId === 'history' ? 'History Log' : categories.find(c => c.id === activeCategoryId)?.name}
+          </h2>
+      </div>
+
       {activeCategoryId === 'history' ? (
         <div className="flex flex-col gap-4 max-w-2xl mx-auto w-full">
           {activities.length > 0 && (
@@ -376,6 +384,8 @@ export function InventoryView({
           </button>
         </div>
       )}
+
+
 
       {/* Activity Edit Modal */}
       {editingActivity && (

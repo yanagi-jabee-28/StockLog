@@ -1,14 +1,14 @@
 import React from 'react';
-import { Grid2x2, History, UtensilsCrossed, Settings } from 'lucide-react';
+import { Grid2x2, History, UtensilsCrossed, Settings, Sparkles } from 'lucide-react';
 import { Category, InventoryItem } from '../../types';
 import { APP_LAST_UPDATED } from '../../constants';
 
 interface SidebarProps {
   categories: Category[];
   items: InventoryItem[];
-  activeTab: 'stock' | 'meals';
+  activeTab: 'stock' | 'selection' | 'meals';
   activeCategoryId: string;
-  setActiveTab: (tab: 'stock' | 'meals') => void;
+  setActiveTab: (tab: 'stock' | 'selection' | 'meals') => void;
   setActiveCategoryId: (id: string) => void;
   setIsCategoryPickerOpen: (isOpen: boolean) => void;
   setIsSettingsModalOpen: (isOpen: boolean) => void;
@@ -51,6 +51,20 @@ export function Sidebar({
           >
             <Grid2x2 className="w-4 h-4" />
             在庫
+          </button>
+          <button
+            onClick={() => setActiveTab('selection')}
+            className={`flex-1 px-4 py-3 rounded-2xl text-[11px] font-bold tracking-wider uppercase transition-all border flex items-center justify-center gap-2 ${
+              activeTab === 'selection'
+                ? 'bg-gray-900 text-white border-gray-900 shadow-xl shadow-gray-200'
+                : 'bg-white text-gray-400 border-gray-100 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <div className="relative">
+              <Sparkles className="w-4 h-4" />
+              {activeTab !== 'selection' && items.filter(i => !i.isArchived).some(i => false) /* Placeholder for selected count if needed */}
+            </div>
+            選択
           </button>
           <button
             onClick={() => setActiveTab('meals')}
