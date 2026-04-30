@@ -17,6 +17,10 @@ import {
 } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { useMealLog } from './hooks/useMealLog';
+import { useInventoryView } from './hooks/useInventoryView';
+import { Sidebar } from './components/layout/Sidebar';
+import { MobileHeader } from './components/layout/MobileHeader';
+import { MealView } from './components/features/meals/MealView';
 import { InventoryItemCard } from './components/InventoryItemCard';
 import { AddItemModal } from './components/AddItemModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -85,17 +89,40 @@ export default function App() {
   const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [editingActivity, setEditingActivity] = useState<{id: string, details: string} | null>(null);
   const [deleteConfirmState, setDeleteConfirmState] = useState<{
     item: InventoryItem;
     linkedOpenedCount: number;
   } | null>(null);
 
-  // Handle Escape key and mobile Back gesture for activity edit
-  useModalNavigation(!!editingActivity, () => setEditingActivity(null), 'activity-edit-modal');
   useModalNavigation(!!deleteConfirmState, () => setDeleteConfirmState(null), 'delete-confirm-modal');
   useModalNavigation(isCategoryPickerOpen, () => setIsCategoryPickerOpen(false), 'category-picker-modal');
+
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<{ id: string, details: string } | null>(null);
+
+  const { filteredItems, activeItems, unopenedItems, unopenedGroups, totalStockByRootId } = useInventoryView(items, activeCategoryId);
+
+  const showAddItemButton = activeCategoryId !== 'history';
+
+  const getActivityMeta = (type: ActivityType) => {
+    return {
+      label: ACTIVITY_META[type]?.label || type,
+      iconClassName: ACTIVITY_META[type]?.iconClassName || 'text-gray-500',
+      Icon: ACTIVITY_ICONS[type] || Settings
+    };
+  };
+
+  const handleClearActivities = () => {
+    clearActivities();
+    setShowClearConfirm(false);
+  };
+
+  const handleEditActivitySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingActivity) return;
+    updateActivity(editingActivity.id, { details: editingActivity.details });
+    setEditingActivity(null);
+  };
 
 
 
@@ -166,86 +193,6 @@ export default function App() {
       setActiveCategoryId(categories[0].id);
     }
   }, [categories, activeCategoryId]);
-
-  const filteredItems = items.filter(item => {
-    if (activeCategoryId === 'history') return true; // Show ALL in history
-    return !item.isArchived && item.categoryId === activeCategoryId;
-  }).sort((a, b) => {
-    if (activeCategoryId === 'history') {
-      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return timeB - timeA;
-    }
-    
-    return compareByExpiryThenName(a, b);
-  });
-
-  const activeItems = filteredItems
-    .filter(item => item.isOpened)
-    .sort((a, b) => {
-      const percentDiff = (a.remainingPercent ?? 100) - (b.remainingPercent ?? 100);
-      if (percentDiff !== 0) return percentDiff;
-      return compareByExpiryThenName(a, b);
-    });
-
-  const unopenedItems = filteredItems
-    .filter(item => !item.isOpened)
-    .sort(compareByExpiryThenName);
-
-  const unopenedGroups = useMemo(() => {
-    const groups = new Map<string, { name: string; items: InventoryItem[]; totalStock: number }>();
-
-    for (const item of unopenedItems) {
-      const key = item.name.trim().toLowerCase();
-      const group = groups.get(key);
-      if (!group) {
-        groups.set(key, { name: item.name, items: [item], totalStock: item.stock });
-        continue;
-      }
-
-      group.items.push(item);
-      group.totalStock += item.stock;
-    }
-
-    return Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name, 'ja'));
-  }, [unopenedItems]);
-
-  const totalStockByRootId = useMemo(() => {
-    const totals = new Map<string, number>();
-
-    for (const item of items) {
-      if (item.isArchived) continue;
-
-      const rootId = item.isOpened && item.originalItemId ? item.originalItemId : item.id;
-      const current = totals.get(rootId) ?? 0;
-      const contribution = item.isOpened ? 1 : item.stock;
-      totals.set(rootId, current + contribution);
-    }
-
-    return totals;
-  }, [items]);
-
-  const handleClearActivities = () => {
-    clearActivities();
-    setShowClearConfirm(false);
-  };
-
-  const handleEditActivitySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingActivity) {
-      updateActivity(editingActivity.id, { details: editingActivity.details });
-      setEditingActivity(null);
-    }
-  };
-
-  const showAddItemButton = activeCategoryId !== 'history';
-
-  const getActivityMeta = (type: ActivityType) => {
-    return {
-      ...ACTIVITY_META[type],
-      Icon: ACTIVITY_ICONS[type],
-    };
-  };
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-[#f8f9fa] text-gray-900 overflow-hidden font-sans xl:max-w-[1400px] xl:mx-auto xl:shadow-[0_0_80px_rgba(0,0,0,0.05)] xl:my-6 xl:h-[calc(100vh-3rem)] xl:rounded-[2.5rem] border-gray-100">
@@ -513,20 +460,11 @@ export default function App() {
         <div className="w-full max-w-6xl px-4 py-6 md:p-12 shrink-0 mb-28 md:mb-0">
           
           {activeTab === 'meals' ? (
-            <>
-              {/* Meals View */}
-              <div>
-                <p className="text-[10px] font-bold text-violet-600 uppercase tracking-[0.2em] mb-2">献立記録</p>
-                <h2 className="text-4xl font-black text-gray-900 tracking-tight leading-none uppercase">Meal Logs</h2>
-              </div>
-              <div className="mt-8">
-                <MealList
-                  mealLogs={mealLogs}
-                  onAdd={() => setIsAddMealModalOpen(true)}
-                  onDelete={deleteMealLog}
-                />
-              </div>
-            </>
+            <MealView 
+              mealLogs={mealLogs}
+              setIsAddMealModalOpen={setIsAddMealModalOpen}
+              deleteMealLog={deleteMealLog}
+            />
           ) : (
             <>
           {/* Desktop Category Title & Add Button */}
