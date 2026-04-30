@@ -155,7 +155,10 @@ export default function App() {
         isOpen={isCategoryPickerOpen}
         categories={categories}
         activeCategoryId={activeCategoryId}
-        onSelectCategory={setActiveCategoryId}
+        onSelectCategory={(categoryId) => {
+          setActiveTab('stock');
+          setActiveCategoryId(categoryId);
+        }}
         onClose={() => setIsCategoryPickerOpen(false)}
       />
 

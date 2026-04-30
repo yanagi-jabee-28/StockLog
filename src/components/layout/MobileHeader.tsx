@@ -89,7 +89,10 @@ export function MobileHeader({
         {categories.map((category) => (
           <button
             key={category.id}
-            onClick={() => setActiveCategoryId(category.id)}
+            onClick={() => {
+              setActiveTab('stock');
+              setActiveCategoryId(category.id);
+            }}
             className={`whitespace-nowrap px-5 py-2 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all border ${
               activeCategoryId === category.id
                 ? 'bg-gray-900 text-white border-gray-900 shadow-md'
@@ -100,7 +103,10 @@ export function MobileHeader({
           </button>
         ))}
         <button
-          onClick={() => setActiveCategoryId('history')}
+          onClick={() => {
+            setActiveTab('stock');
+            setActiveCategoryId('history');
+          }}
           className={`whitespace-nowrap px-5 py-2 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all border flex items-center gap-1.5 ${
             activeCategoryId === 'history'
               ? 'bg-gray-900 text-white border-gray-900 shadow-md'

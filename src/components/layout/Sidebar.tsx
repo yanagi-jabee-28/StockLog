@@ -49,7 +49,10 @@ export function Sidebar({
           {categories.map((category) => (
             <button
               key={category.id}
-              onClick={() => setActiveCategoryId(category.id)}
+              onClick={() => {
+                setActiveTab('stock');
+                setActiveCategoryId(category.id);
+              }}
               className={`text-left px-6 py-4 rounded-2xl text-sm font-bold transition-all flex items-center justify-between group ${
                 activeCategoryId === category.id 
                   ? 'bg-gray-900 text-white shadow-xl shadow-gray-200' 
