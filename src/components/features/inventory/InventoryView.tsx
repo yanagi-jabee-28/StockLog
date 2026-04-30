@@ -58,6 +58,7 @@ interface InventoryViewProps {
   updateActivity: (id: string, updates: Partial<ActivityEntry>) => void;
   clearActivities: () => void;
   setIsAddModalOpen: (isOpen: boolean) => void;
+  showFloatingAddButton?: boolean;
 }
 
 export function InventoryView({
@@ -77,7 +78,8 @@ export function InventoryView({
   deleteActivity,
   updateActivity,
   clearActivities,
-  setIsAddModalOpen
+  setIsAddModalOpen,
+  showFloatingAddButton = true,
 }: InventoryViewProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<{id: string, details: string} | null>(null);
@@ -363,7 +365,7 @@ export function InventoryView({
       )}
 
       {/* Floating Action Button (Mobile Only) */}
-      {showAddItemButton && (
+      {showAddItemButton && showFloatingAddButton && (
         <div className="md:hidden fixed bottom-6 right-6 z-40">
           <button
             onClick={() => setIsAddModalOpen(true)}
