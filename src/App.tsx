@@ -134,11 +134,11 @@ export default function App() {
     });
   };
 
-  const handleCopyForAi = async (type: 'selected' | 'all' | 'meals') => {
+  const handleCopyForAi = async (type: 'selected' | 'all' | 'meals', includeMealsInSelection: boolean = false) => {
     let text = "";
     if (type === 'selected') {
       const selectedItems = items.filter(item => selectedItemIds.has(item.id));
-      text = formatForAi(selectedItems, categories, []);
+      text = formatForAi(selectedItems, categories, includeMealsInSelection ? mealLogs : []);
     } else if (type === 'all') {
       text = formatForAi(items, categories, []);
     } else if (type === 'meals') {
@@ -211,15 +211,15 @@ export default function App() {
               mealLogs={mealLogs}
               setIsAddMealModalOpen={setIsAddMealModalOpen}
               deleteMealLog={deleteMealLog}
-              onCopyRecent={() => handleCopyForAi('meals')}
             />
           ) : activeTab === 'selection' ? (
             <SelectionView
               items={items}
               categories={categories}
+              mealLogs={mealLogs}
               selectedItemIds={selectedItemIds}
               onToggleSelection={handleToggleSelection}
-              onCopySelected={() => handleCopyForAi('selected')}
+              onCopySelected={(includeMeals) => handleCopyForAi('selected', includeMeals)}
               onClearSelection={() => setSelectedItemIds(new Set())}
             />
           ) : (

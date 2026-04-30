@@ -8,26 +8,29 @@ import {
   Boxes,
   ClipboardCheck
 } from 'lucide-react';
-import { InventoryItem, Category } from '../../../types';
+import { InventoryItem, Category, MealLog } from '../../../types';
 
 interface SelectionViewProps {
   items: InventoryItem[];
   categories: Category[];
+  mealLogs: MealLog[];
   selectedItemIds: Set<string>;
   onToggleSelection: (id: string) => void;
-  onCopySelected: () => void;
+  onCopySelected: (includeMeals: boolean) => void;
   onClearSelection: () => void;
 }
 
 export function SelectionView({
   items,
   categories,
+  mealLogs,
   selectedItemIds,
   onToggleSelection,
   onCopySelected,
   onClearSelection
 }: SelectionViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [includeMeals, setIncludeMeals] = useState(true);
 
   const activeItems = items.filter(item => !item.isArchived);
   
@@ -63,7 +66,7 @@ export function SelectionView({
             </button>
           )}
           <button
-            onClick={onCopySelected}
+            onClick={() => onCopySelected(includeMeals)}
             disabled={selectedItemIds.size === 0}
             className={`flex items-center gap-2 px-8 py-4 rounded-2xl font-bold shadow-2xl transition-all active:scale-95 ${
               selectedItemIds.size > 0 
@@ -72,29 +75,51 @@ export function SelectionView({
             }`}
           >
             <Sparkles className={`w-5 h-5 ${selectedItemIds.size > 0 ? 'text-violet-400' : ''}`} />
-            {selectedItemIds.size > 0 ? `${selectedItemIds.size}件をAI用にコピー` : '食材を選択してください'}
+            {selectedItemIds.size > 0 ? `${selectedItemIds.size}件をコピー` : '食材を選択してください'}
           </button>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative mb-8 max-w-md">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="食材を検索..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all"
-        />
-        {searchQuery && (
-          <button 
-            onClick={() => setSearchQuery('')}
-            className="absolute right-5 top-1/2 -translate-y-1/2 p-1 text-gray-300 hover:text-gray-900"
+      {/* Options & Search */}
+      <div className="flex flex-col lg:flex-row gap-6 mb-12">
+        <div className="flex-1 max-w-md">
+          <div className="relative">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="食材を検索..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-5 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-5 top-1/2 -translate-y-1/2 p-1 text-gray-300 hover:text-gray-900"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setIncludeMeals(!includeMeals)}
+            className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-bold text-sm transition-all border ${
+              includeMeals 
+                ? 'bg-violet-50 border-violet-100 text-violet-700' 
+                : 'bg-white border-gray-100 text-gray-400'
+            }`}
           >
-            <X className="w-4 h-4" />
+            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+              includeMeals ? 'bg-violet-600 border-violet-600 text-white' : 'bg-gray-50 border-gray-200'
+            }`}>
+              {includeMeals && <Check className="w-3 h-3 stroke-[4]" />}
+            </div>
+            直近の献立を含める
           </button>
-        )}
+        </div>
       </div>
 
       {/* Selection Grid */}
@@ -160,6 +185,25 @@ export function SelectionView({
               </div>
             </section>
           ))
+        )}
+
+        {/* Recent Meals Preview */}
+        {includeMeals && mealLogs.length > 0 && (
+          <div className="mt-12 p-8 bg-gray-50/50 rounded-[2.5rem] border border-gray-100">
+             <div className="flex items-center gap-3 mb-6">
+                <UtensilsCrossed className="w-5 h-5 text-gray-400" />
+                <h3 className="text-sm font-black text-gray-400 tracking-wider uppercase">Context: Recent Meals</h3>
+              </div>
+              <div className="space-y-3">
+                {[...mealLogs].sort((a, b) => b.date - a.date).slice(0, 3).map(meal => (
+                  <div key={meal.id} className="flex items-center gap-4 text-xs font-bold text-gray-500">
+                    <span className="text-gray-300 tabular-nums">{new Date(meal.date).toLocaleDateString('ja-JP')}</span>
+                    <span className="text-gray-700">{meal.name}</span>
+                  </div>
+                ))}
+                {mealLogs.length > 3 && <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest pl-20">...and more</p>}
+              </div>
+          </div>
         )}
       </div>
     </div>
