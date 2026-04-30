@@ -36,7 +36,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: CATEGORY_IDS.emergency, name: '🧰 防災・備蓄' },
 ];
 
-export const APP_LAST_UPDATED = '2026/04/30 14:35';
+export const APP_LAST_UPDATED = '2026/04/30 22:02';
 
 export const EXPIRY_CATEGORY_IDS = [
   CATEGORY_IDS.fresh,
