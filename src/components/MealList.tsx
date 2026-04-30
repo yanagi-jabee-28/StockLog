@@ -1,7 +1,7 @@
 import React from 'react';
 import { MealLog } from '../types';
 import { MealCard } from './MealCard';
-import { Plus } from 'lucide-react';
+import { Plus, UtensilsCrossed } from 'lucide-react';
 
 interface MealListProps {
   mealLogs: MealLog[];
@@ -42,15 +42,14 @@ export const MealList: React.FC<MealListProps> = ({
 
   if (mealLogs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <p className="text-gray-500 text-lg mb-4">献立記録がありません</p>
-        <button
-          onClick={onAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium"
-        >
-          <Plus size={20} />
-          献立を記録する
-        </button>
+      <div className="flex flex-col items-center justify-center py-32 text-center">
+        <div className="w-16 h-16 mb-6 rounded-3xl bg-gray-50 flex items-center justify-center">
+          <UtensilsCrossed className="w-6 h-6 text-gray-200" />
+        </div>
+        <h3 className="text-lg font-bold text-gray-900 mb-2">献立記録がありません</h3>
+        <p className="text-xs text-gray-400 font-medium">
+           上の「献立を追加」ボタン（スマホは下の「＋」）から、今日の献立を記録しましょう。
+        </p>
       </div>
     );
   }
