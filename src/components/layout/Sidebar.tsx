@@ -34,17 +34,50 @@ export function Sidebar({
       </div>
       
       <div className="px-6 pb-2 overflow-y-auto">
-        <div className="mb-4 px-4 flex items-center justify-between gap-2">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Categories</p>
+        {/* Tab Navigation for PC */}
+        <div className="mb-6 flex gap-2">
           <button
-            onClick={() => setIsCategoryPickerOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-600 shadow-sm hover:border-gray-300 hover:text-gray-900 transition-all"
-            aria-label="カテゴリ一覧を開く"
+            onClick={() => {
+              setActiveTab('stock');
+              if (activeCategoryId === 'history') {
+                setActiveCategoryId(categories[0]?.id || 'fresh');
+              }
+            }}
+            className={`flex-1 px-4 py-3 rounded-2xl text-[11px] font-bold tracking-wider uppercase transition-all border flex items-center justify-center gap-2 ${
+              activeTab === 'stock'
+                ? 'bg-gray-900 text-white border-gray-900 shadow-xl shadow-gray-200'
+                : 'bg-white text-gray-400 border-gray-100 hover:bg-gray-50 hover:text-gray-900'
+            }`}
           >
-            <Grid2x2 className="w-3 h-3" />
-            一覧表示
+            <Grid2x2 className="w-4 h-4" />
+            在庫
+          </button>
+          <button
+            onClick={() => setActiveTab('meals')}
+            className={`flex-1 px-4 py-3 rounded-2xl text-[11px] font-bold tracking-wider uppercase transition-all border flex items-center justify-center gap-2 ${
+              activeTab === 'meals'
+                ? 'bg-gray-900 text-white border-gray-900 shadow-xl shadow-gray-200'
+                : 'bg-white text-gray-400 border-gray-100 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <UtensilsCrossed className="w-4 h-4" />
+            献立
           </button>
         </div>
+
+        {activeTab === 'stock' && (
+          <>
+            <div className="mb-4 px-4 flex items-center justify-between gap-2">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Categories</p>
+              <button
+                onClick={() => setIsCategoryPickerOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-600 shadow-sm hover:border-gray-300 hover:text-gray-900 transition-all"
+                aria-label="カテゴリ一覧を開く"
+              >
+                <Grid2x2 className="w-3 h-3" />
+                一覧表示
+              </button>
+            </div>
         <div className="flex flex-col gap-1">
           {categories.map((category) => (
             <button
@@ -85,20 +118,10 @@ export function Sidebar({
               <History className={`w-4 h-4 transition-transform ${activeTab === 'stock' && activeCategoryId === 'history' ? 'scale-110' : 'text-gray-300'}`} />
               <span>History Log</span>
             </button>
-
-            <button
-              onClick={() => setActiveTab('meals')}
-              className={`text-left px-6 py-4 rounded-2xl text-sm font-bold transition-all flex items-center gap-3 w-full group mt-2 ${
-                activeTab === 'meals'
-                  ? 'bg-gray-900 text-white shadow-xl shadow-gray-200' 
-                  : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <UtensilsCrossed className={`w-4 h-4 transition-transform ${activeTab === 'meals' ? 'scale-110' : 'text-gray-300'}`} />
-              <span>献立記録</span>
-            </button>
           </div>
         </div>
+        </>
+        )}
       </div>
       
       <div className="mt-auto p-6">

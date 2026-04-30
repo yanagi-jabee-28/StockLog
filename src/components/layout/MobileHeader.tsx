@@ -42,34 +42,7 @@ export function MobileHeader({
         最終更新 {APP_LAST_UPDATED}
       </p>
 
-      {/* Tab Navigation */}
-      <div className="mb-4 flex gap-2">
-        <button
-          onClick={() => {
-            setActiveTab('stock');
-            setActiveCategoryId(categories[0]?.id || CATEGORY_IDS.fresh);
-          }}
-          className={`flex-1 px-4 py-2 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all border ${
-            activeTab === 'stock'
-              ? 'bg-gray-900 text-white border-gray-900 shadow-md'
-              : 'bg-white text-gray-400 border-gray-100'
-          }`}
-        >
-          <Boxes className="w-3 h-3 inline mr-1" />
-          在庫
-        </button>
-        <button
-          onClick={() => setActiveTab('meals')}
-          className={`flex-1 px-4 py-2 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all border ${
-            activeTab === 'meals'
-              ? 'bg-gray-900 text-white border-gray-900 shadow-md'
-              : 'bg-white text-gray-400 border-gray-100'
-          }`}
-        >
-          <UtensilsCrossed className="w-3 h-3 inline mr-1" />
-          献立
-        </button>
-      </div>
+      {/* Top Navigation removed in favor of Bottom Navigation */}
 
       {activeTab === 'stock' && (
       <>

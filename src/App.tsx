@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Boxes, UtensilsCrossed } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { useMealLog } from './hooks/useMealLog';
 import { Sidebar } from './components/layout/Sidebar';
@@ -197,18 +197,50 @@ export default function App() {
         </div>
       </main>
 
-      {/* Floating Action Button (Mobile Only) */}
-      {showAddItemButton && (
-        <div className="md:hidden fixed bottom-6 right-6 z-40">
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-100 z-40 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-around h-16 px-4">
           <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="bg-gray-900 text-white w-14 h-14 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.2)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all outline-none"
-            aria-label="アイテムを追加"
+            onClick={() => {
+              setActiveTab('stock');
+              if (activeCategoryId === 'history') setActiveCategoryId(categories[0]?.id || CATEGORY_IDS.fresh);
+            }}
+            className={`flex flex-col items-center justify-center w-16 h-full transition-colors ${
+              activeTab === 'stock' ? 'text-gray-900' : 'text-gray-400'
+            }`}
           >
-            <Plus className="w-7 h-7" />
+            <Boxes className="w-6 h-6 mb-1" />
+            <span className="text-[10px] font-bold">在庫</span>
+          </button>
+
+          {/* Center Add Button depending on Tab */}
+          <div className="-mt-6">
+            <button
+              onClick={() => {
+                if (activeTab === 'stock') {
+                  setIsAddModalOpen(true);
+                } else {
+                  setIsAddMealModalOpen(true);
+                }
+              }}
+              className="bg-gray-900 text-white w-14 h-14 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.2)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all outline-none"
+              aria-label={activeTab === 'stock' ? 'アイテムを追加' : '献立を追加'}
+            >
+              <Plus className="w-7 h-7" />
+            </button>
+          </div>
+
+          <button
+            onClick={() => setActiveTab('meals')}
+            className={`flex flex-col items-center justify-center w-16 h-full transition-colors ${
+              activeTab === 'meals' ? 'text-gray-900' : 'text-gray-400'
+            }`}
+          >
+            <UtensilsCrossed className="w-6 h-6 mb-1" />
+            <span className="text-[10px] font-bold">献立</span>
           </button>
         </div>
-      )}
+      </nav>
 
       {/* Modals */}
       <DeleteConfirmModal

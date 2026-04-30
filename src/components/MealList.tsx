@@ -77,15 +77,6 @@ export const MealList: React.FC<MealListProps> = ({
         </div>
       ))}
 
-      {/* Floating Action Button */}
-      <div className="fixed bottom-20 right-4 z-40">
-        <button
-          onClick={onAdd}
-          className="w-14 h-14 rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 flex items-center justify-center transition-transform hover:scale-110"
-        >
-          <Plus size={28} />
-        </button>
-      </div>
     </div>
   );
 };
