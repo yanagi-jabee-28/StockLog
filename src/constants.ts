@@ -36,7 +36,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: CATEGORY_IDS.emergency, name: '🧰 防災・備蓄' },
 ];
 
-export const APP_LAST_UPDATED = '2026/05/01 00:08';
+export const APP_LAST_UPDATED = '2026/05/02 04:35';
 
 export const EXPIRY_CATEGORY_IDS = [
   CATEGORY_IDS.fresh,
@@ -85,3 +85,9 @@ export const ACTIVITY_META: Record<ActivityType, ActivityMeta> = {
   deleted: { label: '削除', iconClassName: 'text-rose-500' },
   edited: { label: '情報更新', iconClassName: 'text-indigo-500' },
 };
+
+export const UNIT_GROUPS = [
+  { label: '個数', units: ['個', '枚', '本', 'ペア', 'パック', '袋'] },
+  { label: '重量', units: ['g', 'kg'] },
+  { label: '容量', units: ['ml', 'L'] },
+] as const;
