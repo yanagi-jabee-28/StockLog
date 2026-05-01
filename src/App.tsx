@@ -63,6 +63,7 @@ export default function App() {
               mealLogs={mealLogs}
               setIsAddMealModalOpen={ui.setIsAddMealModalOpen}
               deleteMealLog={meals.deleteMealLog}
+              onEditMeal={ui.handleEditMeal}
             />
           ) : ui.activeTab === 'selection' ? (
             <SelectionView
@@ -125,8 +126,10 @@ export default function App() {
 
       <AddMealModal 
         isOpen={ui.isAddMealModalOpen}
-        onClose={() => ui.setIsAddMealModalOpen(false)}
+        onClose={ui.handleCloseMealModal}
         onAdd={ui.handleAddMealLog}
+        onUpdate={ui.handleUpdateMealLog}
+        editMeal={ui.editingMeal}
       />
 
       <AddItemModal 

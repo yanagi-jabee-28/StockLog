@@ -1,20 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Search, FileText, List } from 'lucide-react';
+import { MealLog } from '../../../shared/types';
 
 interface AddMealModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (mealLog: { date: number; name: string; ingredients: string[]; notes: string }) => void;
+  onUpdate: (id: string, mealLog: Partial<MealLog>) => void;
+  editMeal?: MealLog | null;
 }
 
 export const AddMealModal: React.FC<AddMealModalProps> = ({
   isOpen,
   onClose,
   onAdd,
+  onUpdate,
+  editMeal,
 }) => {
   const [mealName, setMealName] = useState('');
   const [ingredientsText, setIngredientsText] = useState('');
   const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      if (editMeal) {
+        setMealName(editMeal.name);
+        setIngredientsText(editMeal.ingredients.join(', '));
+        setNotes(editMeal.notes || '');
+      } else {
+        setMealName('');
+        setIngredientsText('');
+        setNotes('');
+      }
+    }
+  }, [isOpen, editMeal]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,12 +49,20 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
       .map(item => item.trim())
       .filter(item => item.length > 0);
 
-    onAdd({
-      date: Date.now(),
-      name: mealName.trim(),
-      ingredients,
-      notes: notes.trim(),
-    });
+    if (editMeal) {
+      onUpdate(editMeal.id, {
+        name: mealName.trim(),
+        ingredients,
+        notes: notes.trim(),
+      });
+    } else {
+      onAdd({
+        date: Date.now(),
+        name: mealName.trim(),
+        ingredients,
+        notes: notes.trim(),
+      });
+    }
 
     // Reset form
     setMealName('');
@@ -53,10 +80,10 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
         <div className="flex items-start justify-between gap-4 mb-8">
           <div>
             <h2 className="text-2xl sm:text-[2rem] font-black text-gray-900 tracking-tight leading-tight">
-              Record Meal
+              {editMeal ? 'Edit Meal' : 'Record Meal'}
             </h2>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1 leading-relaxed">
-              献立の記録
+              {editMeal ? '献立の編集' : '献立の記録'}
             </p>
           </div>
           <button

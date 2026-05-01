@@ -7,12 +7,14 @@ interface MealViewProps {
   mealLogs: MealLog[];
   setIsAddMealModalOpen: (isOpen: boolean) => void;
   deleteMealLog: (id: string) => void;
+  onEditMeal: (meal: MealLog) => void;
 }
 
 export function MealView({
   mealLogs,
   setIsAddMealModalOpen,
   deleteMealLog,
+  onEditMeal,
 }: MealViewProps) {
   return (
     <>
@@ -45,6 +47,7 @@ export function MealView({
           mealLogs={mealLogs}
           onAdd={() => setIsAddMealModalOpen(true)}
           onDelete={deleteMealLog}
+          onEdit={onEditMeal}
         />
       </div>
     </>

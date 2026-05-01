@@ -7,6 +7,7 @@ interface MealListProps {
   mealLogs: MealLog[];
   onAdd: () => void;
   onDelete: (id: string) => void;
+  onEdit: (meal: MealLog) => void;
 }
 
 const groupMealsByDate = (
@@ -37,6 +38,7 @@ export const MealList: React.FC<MealListProps> = ({
   mealLogs,
   onAdd,
   onDelete,
+  onEdit,
 }) => {
   const groupedLogs = groupMealsByDate(mealLogs);
 
@@ -70,6 +72,7 @@ export const MealList: React.FC<MealListProps> = ({
                 key={log.id}
                 mealLog={log}
                 onDelete={onDelete}
+                onEdit={onEdit}
               />
             ))}
           </div>

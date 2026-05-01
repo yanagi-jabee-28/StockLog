@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2, Edit2 } from 'lucide-react';
 import { MealLog } from '../../../shared/types';
 
 interface MealCardProps {
   mealLog: MealLog;
   onDelete: (id: string) => void;
+  onEdit: (meal: MealLog) => void;
 }
 
 const formatJapaneseDate = (timestamp: number) => {
@@ -19,7 +20,7 @@ const formatJapaneseDate = (timestamp: number) => {
   }).format(date);
 };
 
-export const MealCard: React.FC<MealCardProps> = ({ mealLog, onDelete }) => {
+export const MealCard: React.FC<MealCardProps> = ({ mealLog, onDelete, onEdit }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -52,15 +53,26 @@ export const MealCard: React.FC<MealCardProps> = ({ mealLog, onDelete }) => {
               </div>
             )}
           </div>
-          <button
-            className="p-2 hover:bg-gray-200 rounded-full flex-shrink-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(mealLog.id);
-            }}
-          >
-            <Trash2 size={18} className="text-red-500" />
-          </button>
+          <div className="flex flex-col gap-1 flex-shrink-0">
+            <button
+              className="p-2 hover:bg-gray-200 rounded-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(mealLog);
+              }}
+            >
+              <Edit2 size={16} className="text-violet-600" />
+            </button>
+            <button
+              className="p-2 hover:bg-gray-200 rounded-full"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(mealLog.id);
+              }}
+            >
+              <Trash2 size={16} className="text-red-500" />
+            </button>
+          </div>
           <div className="p-2 flex-shrink-0">
             {isExpanded ? (
               <ChevronUp size={20} className="text-gray-600" />

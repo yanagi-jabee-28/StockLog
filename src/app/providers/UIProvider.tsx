@@ -11,6 +11,8 @@ interface UIContextType {
   setActiveCategoryId: (id: string) => void;
   editingItem: InventoryItem | null;
   setEditingItem: (item: InventoryItem | null) => void;
+  editingMeal: MealLog | null;
+  setEditingMeal: (meal: MealLog | null) => void;
   isDuplicateMode: boolean;
   setIsDuplicateMode: (mode: boolean) => void;
   isAddModalOpen: boolean;
@@ -40,6 +42,9 @@ interface UIContextType {
   handleConfirmDelete: () => void;
   handleCloseAddModal: () => void;
   handleAddMealLog: (mealData: { date: number; name: string; ingredients: string[]; notes: string }) => void;
+  handleEditMeal: (meal: MealLog) => void;
+  handleUpdateMealLog: (id: string, mealData: Partial<MealLog>) => void;
+  handleCloseMealModal: () => void;
   handleToggleSelection: (id: string) => void;
   handleCopyForAi: (type: 'selected' | 'all' | 'meals', includeMeals?: boolean) => Promise<void>;
 }
@@ -52,6 +57,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [activeTab, setActiveTab] = useState<'stock' | 'selection' | 'meals'>('stock');
   const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || CATEGORY_IDS.fresh);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [editingMeal, setEditingMeal] = useState<MealLog | null>(null);
   const [isDuplicateMode, setIsDuplicateMode] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAddMealModalOpen, setIsAddMealModalOpen] = useState(false);
@@ -109,6 +115,22 @@ export function UIProvider({ children }: { children: ReactNode }) {
     setIsAddMealModalOpen(false);
   }, [meals]);
 
+  const handleEditMeal = useCallback((meal: MealLog) => {
+    setEditingMeal(meal);
+    setIsAddMealModalOpen(true);
+  }, []);
+
+  const handleUpdateMealLog = useCallback((id: string, mealData: Partial<MealLog>) => {
+    meals.updateMealLog(id, mealData);
+    setIsAddMealModalOpen(false);
+    setEditingMeal(null);
+  }, [meals]);
+
+  const handleCloseMealModal = useCallback(() => {
+    setIsAddMealModalOpen(false);
+    setEditingMeal(null);
+  }, []);
+
   const handleToggleSelection = useCallback((id: string) => {
     setSelectedItemIds(prev => {
       const next = new Set(prev);
@@ -160,6 +182,8 @@ export function UIProvider({ children }: { children: ReactNode }) {
     setActiveCategoryId,
     editingItem,
     setEditingItem,
+    editingMeal,
+    setEditingMeal,
     isDuplicateMode,
     setIsDuplicateMode,
     isAddModalOpen,
@@ -184,6 +208,9 @@ export function UIProvider({ children }: { children: ReactNode }) {
     handleConfirmDelete,
     handleCloseAddModal,
     handleAddMealLog,
+    handleEditMeal,
+    handleUpdateMealLog,
+    handleCloseMealModal,
     handleToggleSelection,
     handleCopyForAi,
   };
