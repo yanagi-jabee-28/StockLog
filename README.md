@@ -38,6 +38,16 @@ GitHub: https://github.com/yanagi-jabee-28/StockLog
 5. **同名ロット管理**:
   同じ商品名の在庫はアコーディオンで束ねて表示。内容量・期限が異なるロットを見分けながら開封順を決められます。
 
+## 🏗 アーキテクチャ
+
+本プロジェクトは **Feature-Sliced Design (FSD)** に基づき設計されています。
+詳細は [ARCHITECTURE.md](./ARCHITECTURE.md) を参照してください。
+
+- **Layered Structure**: `app`, `features`, `entities`, `shared` の4層構造。
+- **Repository Pattern**: データ永続化層（localStorage）を抽象化し、ドメインロジックからの分離を実現。
+- **Strict Dependency**: 下位レイヤーから上位レイヤーへの参照を禁止し、単方向の依存関係を維持。
+
+
 ##  ローカル検証とPages差分の注意点
 
 - **データ保存先が別になる**:
