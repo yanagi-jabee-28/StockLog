@@ -1,8 +1,10 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
-import './index.css';
-import { logDebug, logError, isDebugEnabled } from './lib/logger';
+import './app/styles/index.css';
+import { logDebug, logError, isDebugEnabled } from './shared/lib/logger';
+import { DataProvider } from './app/providers/DataProvider';
+import { UIProvider } from './app/providers/UIProvider';
 
 window.addEventListener('error', (event) => {
   logError('Unhandled runtime error', {
@@ -22,6 +24,10 @@ logDebug('Debug logging active', { debug: isDebugEnabled() });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <DataProvider>
+      <UIProvider>
+        <App />
+      </UIProvider>
+    </DataProvider>
   </StrictMode>,
 );

@@ -1,4 +1,4 @@
-import { ActivityType, Category } from './types';
+import { ActivityType, Category } from './shared/types';
 
 export const CATEGORY_IDS = {
   fresh: 'fresh',
@@ -36,7 +36,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: CATEGORY_IDS.emergency, name: '🧰 防災・備蓄' },
 ];
 
-export const APP_LAST_UPDATED = '2026/05/02 04:35';
+export const APP_LAST_UPDATED = '2026/05/02 04:47';
 
 export const EXPIRY_CATEGORY_IDS = [
   CATEGORY_IDS.fresh,

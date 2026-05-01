@@ -1,0 +1,382 @@
+import { useState, useMemo, useCallback, useRef, useLayoutEffect, useEffect } from 'react';
+import { InventoryItem, Category } from '../../../shared/types';
+import { ModalCloseReason } from '../../../shared/lib/hooks/useModalNavigation';
+
+interface UseAddItemFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  initialCategory: string;
+  editItem?: InventoryItem | null;
+  isDuplicate?: boolean;
+  items: InventoryItem[];
+  onAdd: (item: Omit<InventoryItem, 'id' | 'createdAt'>) => void;
+  onEdit?: (id: string, updates: Partial<InventoryItem>) => void;
+}
+
+export function useAddItemForm({
+  isOpen,
+  onClose,
+  initialCategory,
+  editItem,
+  isDuplicate,
+  items,
+  onAdd,
+  onEdit,
+}: UseAddItemFormProps) {
+  const [name, setName] = useState('');
+  const [categoryId, setCategoryId] = useState(initialCategory);
+  const [stock, setStock] = useState('0');
+  const [unit, setUnit] = useState('個');
+  const [purchasePrice, setPurchasePrice] = useState('');
+  const [contentAmount, setContentAmount] = useState('');
+  const [contentUnit, setContentUnit] = useState('個');
+  const [alertThreshold, setAlertThreshold] = useState('1');
+  const [alertThresholdPercent, setAlertThresholdPercent] = useState('20');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [notes, setNotes] = useState('');
+  const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isUnitPickerOpen, setIsUnitPickerOpen] = useState(false);
+
+  const contentAmountRepeatRef = useRef<number | null>(null);
+  const contentAmountLongPressRef = useRef<number | null>(null);
+  const stockRepeatRef = useRef<number | null>(null);
+  const stockLongPressRef = useRef<number | null>(null);
+  const alertRepeatRef = useRef<number | null>(null);
+  const alertLongPressRef = useRef<number | null>(null);
+
+  const initialFormState = useMemo(() => {
+    if (editItem) {
+      return {
+        name: editItem.name,
+        categoryId: editItem.categoryId,
+        stock: editItem.stock.toString(),
+        unit: '個',
+        purchasePrice: editItem.purchasePrice?.toString() || '',
+        contentAmount: editItem.contentAmount?.toString() || '',
+        contentUnit: editItem.contentUnit || editItem.unit,
+        alertThreshold: editItem.alertThreshold.toString(),
+        alertThresholdPercent: (editItem.alertThresholdPercent ?? 20).toString(),
+        expiryDate: editItem.expiryDate || '',
+        notes: editItem.notes || '',
+      };
+    }
+
+    return {
+      name: '',
+      categoryId: initialCategory,
+      stock: '0',
+      unit: '個',
+      purchasePrice: '',
+      contentAmount: '',
+      contentUnit: '個',
+      alertThreshold: '1',
+      alertThresholdPercent: '20',
+      expiryDate: '',
+      notes: '',
+    };
+  }, [editItem, initialCategory]);
+
+  const hasUnsavedChanges =
+    name !== initialFormState.name ||
+    categoryId !== initialFormState.categoryId ||
+    stock !== initialFormState.stock ||
+    unit !== initialFormState.unit ||
+    purchasePrice !== initialFormState.purchasePrice ||
+    contentAmount !== initialFormState.contentAmount ||
+    contentUnit !== initialFormState.contentUnit ||
+    alertThreshold !== initialFormState.alertThreshold ||
+    alertThresholdPercent !== initialFormState.alertThresholdPercent ||
+    expiryDate !== initialFormState.expiryDate ||
+    notes !== initialFormState.notes;
+
+  const handleRequestClose = useCallback((reason?: ModalCloseReason) => {
+    if (!hasUnsavedChanges) {
+      onClose();
+      return;
+    }
+
+    if (reason === 'popstate') {
+      window.history.pushState({ modalOpen: true }, '');
+    }
+
+    setShowUnsavedConfirm(true);
+  }, [hasUnsavedChanges, onClose]);
+
+  const handleConfirmDiscard = () => {
+    setShowUnsavedConfirm(false);
+    onClose();
+  };
+
+  const handleCancelDiscard = () => {
+    setShowUnsavedConfirm(false);
+  };
+
+  const suggestions = useMemo(() => {
+    if (!name.trim() || name.length < 1) return [];
+    
+    const uniqueItemsMap = new Map<string, InventoryItem>();
+    items.forEach(item => {
+      const lowerName = item.name.toLowerCase();
+      if (!uniqueItemsMap.has(lowerName)) {
+        uniqueItemsMap.set(lowerName, item);
+      }
+    });
+
+    return Array.from(uniqueItemsMap.values())
+      .filter(item => 
+        item.name.toLowerCase().includes(name.toLowerCase()) && 
+        item.name.toLowerCase() !== name.toLowerCase()
+      )
+      .slice(0, 5);
+  }, [items, name]);
+
+  const handleSelectSuggestion = (suggestion: InventoryItem) => {
+    setName(suggestion.name);
+    setCategoryId(suggestion.categoryId);
+    setUnit('個');
+    setContentUnit(suggestion.contentUnit || suggestion.unit);
+    setShowSuggestions(false);
+  };
+
+  const getUnitPrice = useCallback(() => {
+    const price = parseFloat(purchasePrice);
+    const amount = parseFloat(contentAmount);
+
+    if (!Number.isFinite(price) || price <= 0) return null;
+    if (!Number.isFinite(amount) || amount <= 0) return price;
+    return Math.round((price / amount) * 100) / 100;
+  }, [purchasePrice, contentAmount]);
+
+  const changeStockBy = (delta: number) => {
+    setStock(current => {
+      const nextValue = Math.max(0, (parseInt(current) || 0) + delta);
+      return nextValue.toString();
+    });
+  };
+
+  const changeAlertThresholdBy = (delta: number) => {
+    setAlertThreshold(current => {
+      const nextValue = Math.max(0, (parseInt(current) || 0) + delta);
+      return nextValue.toString();
+    });
+  };
+
+  const changeContentAmountBy = (delta: number) => {
+    setContentAmount(current => {
+      const currentValue = parseFloat(current) || 0;
+      const nextValue = Math.max(0, Math.round((currentValue + delta) * 100) / 100);
+      return Number.isInteger(nextValue) ? String(nextValue) : nextValue.toString();
+    });
+  };
+
+  const clearContentAmountTimers = () => {
+    if (contentAmountLongPressRef.current !== null) {
+      window.clearTimeout(contentAmountLongPressRef.current);
+      contentAmountLongPressRef.current = null;
+    }
+    if (contentAmountRepeatRef.current !== null) {
+      window.clearInterval(contentAmountRepeatRef.current);
+      contentAmountRepeatRef.current = null;
+    }
+  };
+
+  const clearStockTimers = () => {
+    if (stockLongPressRef.current !== null) {
+      window.clearTimeout(stockLongPressRef.current);
+      stockLongPressRef.current = null;
+    }
+    if (stockRepeatRef.current !== null) {
+      window.clearInterval(stockRepeatRef.current);
+      stockRepeatRef.current = null;
+    }
+  };
+
+  const clearAlertTimers = () => {
+    if (alertLongPressRef.current !== null) {
+      window.clearTimeout(alertLongPressRef.current);
+      alertLongPressRef.current = null;
+    }
+    if (alertRepeatRef.current !== null) {
+      window.clearInterval(alertRepeatRef.current);
+      alertRepeatRef.current = null;
+    }
+  };
+
+  const startContentAmountAdjust = (delta: number) => {
+    clearContentAmountTimers();
+    changeContentAmountBy(delta);
+    contentAmountLongPressRef.current = window.setTimeout(() => {
+      contentAmountRepeatRef.current = window.setInterval(() => {
+        changeContentAmountBy(delta);
+      }, 120);
+    }, 320);
+  };
+
+  const stopContentAmountAdjust = () => clearContentAmountTimers();
+
+  const startStockAdjust = (delta: number) => {
+    if (delta < 0 && (parseInt(stock) || 0) <= 0) return;
+    clearStockTimers();
+    changeStockBy(delta);
+    stockLongPressRef.current = window.setTimeout(() => {
+      stockRepeatRef.current = window.setInterval(() => {
+        changeStockBy(delta);
+      }, 120);
+    }, 320);
+  };
+
+  const stopStockAdjust = () => clearStockTimers();
+
+  const startAlertAdjust = (delta: number) => {
+    if (delta < 0 && (parseInt(alertThreshold) || 0) <= 0) return;
+    clearAlertTimers();
+    changeAlertThresholdBy(delta);
+    alertLongPressRef.current = window.setTimeout(() => {
+      alertRepeatRef.current = window.setInterval(() => {
+        changeAlertThresholdBy(delta);
+      }, 120);
+    }, 320);
+  };
+
+  const stopAlertAdjust = () => clearAlertTimers();
+
+  const handleSelectContentUnit = (selectedUnit: string) => {
+    setContentUnit(selectedUnit);
+    setIsUnitPickerOpen(false);
+  };
+
+  useLayoutEffect(() => {
+    if (isOpen) {
+      if (editItem) {
+        setName(editItem.name);
+        setCategoryId(editItem.categoryId);
+        setStock(editItem.stock.toString());
+        setUnit('個');
+        setPurchasePrice(editItem.purchasePrice?.toString() || '');
+        setContentAmount(editItem.contentAmount?.toString() || '');
+        setContentUnit(editItem.contentUnit || editItem.unit);
+        setAlertThreshold(editItem.alertThreshold.toString());
+        setAlertThresholdPercent((editItem.alertThresholdPercent ?? 20).toString());
+        setExpiryDate(editItem.expiryDate || '');
+        setNotes(editItem.notes || '');
+        setShowUnsavedConfirm(false);
+      } else {
+        setName('');
+        setCategoryId(initialCategory);
+        setStock('0');
+        setUnit('個');
+        setPurchasePrice('');
+        setContentAmount('');
+        setContentUnit('個');
+        setAlertThreshold('1');
+        setAlertThresholdPercent('20');
+        setExpiryDate('');
+        setNotes('');
+        setIsUnitPickerOpen(false);
+        setShowUnsavedConfirm(false);
+      }
+    }
+  }, [isOpen, initialCategory, editItem]);
+
+  useEffect(() => {
+    return () => {
+      clearContentAmountTimers();
+      clearStockTimers();
+      clearAlertTimers();
+    };
+  }, []);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    const unitPrice = getUnitPrice();
+    const data = {
+      name: name.trim(),
+      categoryId,
+      stock: parseInt(stock) || 0,
+      unit: '個',
+      purchasePrice: purchasePrice.trim() ? Math.max(0, parseFloat(purchasePrice) || 0) : undefined,
+      contentAmount: contentAmount.trim() ? Math.max(0, parseFloat(contentAmount) || 0) : undefined,
+      contentUnit: contentAmount.trim() ? (contentUnit.trim() || '個') : undefined,
+      pricePerUnit: unitPrice ?? undefined,
+      lowestPricePerUnit: unitPrice ?? undefined,
+      priceHistory: purchasePrice.trim()
+        ? [{
+            timestamp: new Date().toISOString(),
+            purchasePrice: Math.max(0, parseFloat(purchasePrice) || 0),
+            contentAmount: contentAmount.trim() ? Math.max(0, parseFloat(contentAmount) || 0) : undefined,
+            contentUnit: contentAmount.trim() ? (contentUnit.trim() || '個') : undefined,
+            pricePerUnit: unitPrice ?? 0,
+            notes: notes.trim() || undefined,
+          }]
+        : [],
+      alertThreshold: parseInt(alertThreshold) || 0,
+      alertThresholdPercent: parseInt(alertThresholdPercent) || 20,
+      expiryDate: expiryDate || undefined,
+      notes: notes.trim() || undefined,
+    };
+
+    if (editItem && onEdit && !isDuplicate) {
+      onEdit(editItem.id, data);
+    } else {
+      onAdd({
+        ...data,
+        isOpened: false,
+        originalItemId: undefined,
+        remainingAmount: undefined,
+        remainingPercent: undefined,
+      });
+    }
+    
+    onClose();
+  };
+
+  return {
+    state: {
+      name,
+      categoryId,
+      stock,
+      unit,
+      purchasePrice,
+      contentAmount,
+      contentUnit,
+      alertThreshold,
+      alertThresholdPercent,
+      expiryDate,
+      notes,
+      showUnsavedConfirm,
+      showSuggestions,
+      isUnitPickerOpen,
+      suggestions,
+      hasUnsavedChanges,
+    },
+    actions: {
+      setName,
+      setCategoryId,
+      setStock,
+      setPurchasePrice,
+      setContentAmount,
+      setAlertThreshold,
+      setAlertThresholdPercent,
+      setExpiryDate,
+      setNotes,
+      setShowSuggestions,
+      setIsUnitPickerOpen,
+      handleRequestClose,
+      handleConfirmDiscard,
+      handleCancelDiscard,
+      handleSelectSuggestion,
+      handleSelectContentUnit,
+      startContentAmountAdjust,
+      stopContentAmountAdjust,
+      startStockAdjust,
+      stopStockAdjust,
+      startAlertAdjust,
+      stopAlertAdjust,
+      handleSubmit,
+      getUnitPrice,
+    }
+  };
+}
