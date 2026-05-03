@@ -8,6 +8,7 @@ interface MealListProps {
   onAdd: () => void;
   onDelete: (id: string) => void;
   onEdit: (meal: MealLog) => void;
+  onRegisterPrep: (meal: MealLog) => void;
 }
 
 const groupMealsByDate = (
@@ -39,6 +40,7 @@ export const MealList: React.FC<MealListProps> = ({
   onAdd,
   onDelete,
   onEdit,
+  onRegisterPrep,
 }) => {
   const groupedLogs = groupMealsByDate(mealLogs);
 
@@ -73,6 +75,7 @@ export const MealList: React.FC<MealListProps> = ({
                 mealLog={log}
                 onDelete={onDelete}
                 onEdit={onEdit}
+                onRegisterPrep={onRegisterPrep}
               />
             ))}
           </div>

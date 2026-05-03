@@ -17,15 +17,17 @@ interface Props {
   onAdd: (item: Omit<InventoryItem, 'id' | 'createdAt'>) => void;
   onEdit?: (id: string, updates: Partial<InventoryItem>) => void;
   initialCategory: string;
+  initialValues?: Partial<Omit<InventoryItem, 'id' | 'createdAt'>> | null;
   editItem?: InventoryItem | null;
   isDuplicate?: boolean;
 }
 
-export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit, initialCategory, editItem, isDuplicate }: Props) {
+export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit, initialCategory, initialValues, editItem, isDuplicate }: Props) {
   const { state, actions } = useAddItemForm({
     isOpen,
     onClose,
     initialCategory,
+    initialValues,
     editItem,
     isDuplicate,
     items,

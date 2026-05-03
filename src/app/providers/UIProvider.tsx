@@ -34,10 +34,13 @@ interface UIContextType {
   setIsSelectionMode: (mode: boolean) => void;
   showCopyToast: boolean;
   setShowCopyToast: (show: boolean) => void;
+  initialAddItemValues: Partial<Omit<InventoryItem, 'id' | 'createdAt'>> | null;
+  setInitialAddItemValues: (values: Partial<Omit<InventoryItem, 'id' | 'createdAt'>> | null) => void;
   
   // Handlers
   handleEditItem: (item: InventoryItem) => void;
   handleDuplicateItem: (item: InventoryItem) => void;
+  handleRegisterPrepFromMeal: (meal: MealLog) => void;
   handleDeleteItem: (id: string) => void;
   handleConfirmDelete: () => void;
   handleCloseAddModal: () => void;
@@ -71,16 +74,33 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [showCopyToast, setShowCopyToast] = useState(false);
+  const [initialAddItemValues, setInitialAddItemValues] = useState<Partial<Omit<InventoryItem, 'id' | 'createdAt'>> | null>(null);
 
   const handleEditItem = useCallback((item: InventoryItem) => {
     setIsDuplicateMode(false);
     setEditingItem(item);
+    setInitialAddItemValues(null);
     setIsAddModalOpen(true);
   }, []);
 
   const handleDuplicateItem = useCallback((item: InventoryItem) => {
     setIsDuplicateMode(true);
     setEditingItem(item); 
+    setInitialAddItemValues(null);
+    setIsAddModalOpen(true);
+  }, []);
+
+  const handleRegisterPrepFromMeal = useCallback((meal: MealLog) => {
+    setIsDuplicateMode(false);
+    setEditingItem(null);
+    setInitialAddItemValues({
+      name: meal.name,
+      categoryId: CATEGORY_IDS.prep,
+      stock: 1,
+      notes: meal.ingredients.length > 0 
+        ? `【使用食材】\n${meal.ingredients.join('、')}${meal.notes ? `\n\n【備考】\n${meal.notes}` : ''}`
+        : meal.notes || undefined,
+    });
     setIsAddModalOpen(true);
   }, []);
 
@@ -107,6 +127,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const handleCloseAddModal = useCallback(() => {
     setIsAddModalOpen(false);
     setEditingItem(null);
+    setInitialAddItemValues(null);
     setIsDuplicateMode(false);
   }, []);
 
@@ -202,8 +223,11 @@ export function UIProvider({ children }: { children: ReactNode }) {
     setIsSelectionMode,
     showCopyToast,
     setShowCopyToast,
+    initialAddItemValues,
+    setInitialAddItemValues,
     handleEditItem,
     handleDuplicateItem,
+    handleRegisterPrepFromMeal,
     handleDeleteItem,
     handleConfirmDelete,
     handleCloseAddModal,

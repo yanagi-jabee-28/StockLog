@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Trash2, Edit2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Trash2, Edit2, CookingPot } from 'lucide-react';
 import { MealLog } from '../../../shared/types';
 
 interface MealCardProps {
   mealLog: MealLog;
   onDelete: (id: string) => void;
   onEdit: (meal: MealLog) => void;
+  onRegisterPrep: (meal: MealLog) => void;
 }
 
 const formatJapaneseDate = (timestamp: number) => {
@@ -20,7 +21,7 @@ const formatJapaneseDate = (timestamp: number) => {
   }).format(date);
 };
 
-export const MealCard: React.FC<MealCardProps> = ({ mealLog, onDelete, onEdit }) => {
+export const MealCard: React.FC<MealCardProps> = ({ mealLog, onDelete, onEdit, onRegisterPrep }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -55,7 +56,18 @@ export const MealCard: React.FC<MealCardProps> = ({ mealLog, onDelete, onEdit })
           </div>
           <div className="flex flex-col gap-1 flex-shrink-0">
             <button
-              className="p-2 hover:bg-gray-200 rounded-full"
+              title="作り置きとして登録"
+              className="p-2 hover:bg-emerald-50 rounded-full group transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRegisterPrep(mealLog);
+              }}
+            >
+              <CookingPot size={16} className="text-emerald-600 group-hover:scale-110 transition-transform" />
+            </button>
+            <button
+              title="編集"
+              className="p-2 hover:bg-gray-100 rounded-full"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit(mealLog);
@@ -64,7 +76,8 @@ export const MealCard: React.FC<MealCardProps> = ({ mealLog, onDelete, onEdit })
               <Edit2 size={16} className="text-violet-600" />
             </button>
             <button
-              className="p-2 hover:bg-gray-200 rounded-full"
+              title="削除"
+              className="p-2 hover:bg-gray-100 rounded-full"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(mealLog.id);

@@ -6,6 +6,7 @@ interface UseAddItemFormProps {
   isOpen: boolean;
   onClose: () => void;
   initialCategory: string;
+  initialValues?: Partial<Omit<InventoryItem, 'id' | 'createdAt'>> | null;
   editItem?: InventoryItem | null;
   isDuplicate?: boolean;
   items: InventoryItem[];
@@ -17,6 +18,7 @@ export function useAddItemForm({
   isOpen,
   onClose,
   initialCategory,
+  initialValues,
   editItem,
   isDuplicate,
   items,
@@ -63,19 +65,19 @@ export function useAddItemForm({
     }
 
     return {
-      name: '',
-      categoryId: initialCategory,
-      stock: '0',
+      name: initialValues?.name || '',
+      categoryId: initialValues?.categoryId || initialCategory,
+      stock: initialValues?.stock?.toString() || '0',
       unit: '個',
-      purchasePrice: '',
-      contentAmount: '',
-      contentUnit: '個',
-      alertThreshold: '1',
-      alertThresholdPercent: '20',
-      expiryDate: '',
-      notes: '',
+      purchasePrice: initialValues?.purchasePrice?.toString() || '',
+      contentAmount: initialValues?.contentAmount?.toString() || '',
+      contentUnit: initialValues?.contentUnit || '個',
+      alertThreshold: initialValues?.alertThreshold?.toString() || '1',
+      alertThresholdPercent: (initialValues?.alertThresholdPercent ?? 20).toString(),
+      expiryDate: initialValues?.expiryDate || '',
+      notes: initialValues?.notes || '',
     };
-  }, [editItem, initialCategory]);
+  }, [editItem, initialCategory, initialValues]);
 
   const hasUnsavedChanges =
     name !== initialFormState.name ||
@@ -262,22 +264,22 @@ export function useAddItemForm({
         setNotes(editItem.notes || '');
         setShowUnsavedConfirm(false);
       } else {
-        setName('');
-        setCategoryId(initialCategory);
-        setStock('0');
+        setName(initialValues?.name || '');
+        setCategoryId(initialValues?.categoryId || initialCategory);
+        setStock(initialValues?.stock?.toString() || '0');
         setUnit('個');
-        setPurchasePrice('');
-        setContentAmount('');
-        setContentUnit('個');
-        setAlertThreshold('1');
-        setAlertThresholdPercent('20');
-        setExpiryDate('');
-        setNotes('');
+        setPurchasePrice(initialValues?.purchasePrice?.toString() || '');
+        setContentAmount(initialValues?.contentAmount?.toString() || '');
+        setContentUnit(initialValues?.contentUnit || '個');
+        setAlertThreshold(initialValues?.alertThreshold?.toString() || '1');
+        setAlertThresholdPercent((initialValues?.alertThresholdPercent ?? 20).toString());
+        setExpiryDate(initialValues?.expiryDate || '');
+        setNotes(initialValues?.notes || '');
         setIsUnitPickerOpen(false);
         setShowUnsavedConfirm(false);
       }
     }
-  }, [isOpen, initialCategory, editItem]);
+  }, [isOpen, initialCategory, editItem, initialValues]);
 
   useEffect(() => {
     return () => {

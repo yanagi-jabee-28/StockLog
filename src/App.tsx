@@ -64,6 +64,7 @@ export default function App() {
               setIsAddMealModalOpen={ui.setIsAddMealModalOpen}
               deleteMealLog={meals.deleteMealLog}
               onEditMeal={ui.handleEditMeal}
+              onRegisterPrep={ui.handleRegisterPrepFromMeal}
             />
           ) : ui.activeTab === 'selection' ? (
             <SelectionView
@@ -140,6 +141,7 @@ export default function App() {
         onAdd={inventory.addItem}
         onEdit={inventory.updateItem}
         initialCategory={ui.activeCategoryId}
+        initialValues={ui.initialAddItemValues}
         editItem={ui.editingItem}
         isDuplicate={ui.isDuplicateMode}
       />
