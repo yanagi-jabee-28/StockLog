@@ -43,6 +43,7 @@ export function useAddItemForm({
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isUnitPickerOpen, setIsUnitPickerOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
 
   const initialFormState = useMemo(() => {
     if (editItem) {
@@ -58,6 +59,7 @@ export function useAddItemForm({
         alertThresholdPercent: (editItem.alertThresholdPercent ?? 20).toString(),
         expiryDate: editItem.expiryDate || '',
         notes: editItem.notes || '',
+        imageUrl: editItem.imageUrl,
       };
     }
 
@@ -73,6 +75,7 @@ export function useAddItemForm({
       alertThresholdPercent: (initialValues?.alertThresholdPercent ?? 20).toString(),
       expiryDate: initialValues?.expiryDate || '',
       notes: initialValues?.notes || '',
+      imageUrl: initialValues?.imageUrl,
     };
   }, [editItem, initialCategory, initialValues]);
 
@@ -87,7 +90,8 @@ export function useAddItemForm({
     alertThreshold !== initialFormState.alertThreshold ||
     alertThresholdPercent !== initialFormState.alertThresholdPercent ||
     expiryDate !== initialFormState.expiryDate ||
-    notes !== initialFormState.notes;
+    notes !== initialFormState.notes ||
+    imageUrl !== initialFormState.imageUrl;
 
   const handleRequestClose = useCallback((reason?: ModalCloseReason) => {
     if (!hasUnsavedChanges) {
@@ -188,6 +192,7 @@ export function useAddItemForm({
         setAlertThresholdPercent((editItem.alertThresholdPercent ?? 20).toString());
         setExpiryDate(editItem.expiryDate || '');
         setNotes(editItem.notes || '');
+        setImageUrl(editItem.imageUrl);
         setShowUnsavedConfirm(false);
       } else {
         setName(initialValues?.name || '');
@@ -201,6 +206,7 @@ export function useAddItemForm({
         setAlertThresholdPercent((initialValues?.alertThresholdPercent ?? 20).toString());
         setExpiryDate(initialValues?.expiryDate || '');
         setNotes(initialValues?.notes || '');
+        setImageUrl(initialValues?.imageUrl);
         setIsUnitPickerOpen(false);
         setShowUnsavedConfirm(false);
       }
@@ -236,6 +242,7 @@ export function useAddItemForm({
       alertThresholdPercent: parseInt(alertThresholdPercent) || 20,
       expiryDate: expiryDate || undefined,
       notes: notes.trim() || undefined,
+      imageUrl,
     };
 
     if (editItem && onEdit && !isDuplicate) {
@@ -271,6 +278,7 @@ export function useAddItemForm({
       isUnitPickerOpen,
       suggestions,
       hasUnsavedChanges,
+      imageUrl,
     },
     actions: {
       setName,
@@ -282,6 +290,7 @@ export function useAddItemForm({
       setAlertThresholdPercent,
       setExpiryDate,
       setNotes,
+      setImageUrl,
       setShowSuggestions,
       setIsUnitPickerOpen,
       handleRequestClose,

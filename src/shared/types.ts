@@ -12,6 +12,14 @@ export interface PriceHistoryEntry {
   notes?: string;
 }
 
+export interface Attachment {
+  id: string;
+  type: 'image' | 'other';
+  url: string; // Base64 data URI
+  name?: string;
+  createdAt: string;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -36,6 +44,16 @@ export interface InventoryItem {
   pricePerUnit?: number;
   lowestPricePerUnit?: number;
   priceHistory?: PriceHistoryEntry[];
+  imageUrl?: string; // Primary image (Base64)
+  attachments?: Attachment[];
+}
+
+export interface Attachment {
+  id: string;
+  type: 'image' | 'other';
+  url: string; // Base64 data URI or reference
+  name?: string;
+  createdAt: string;
 }
 
 export type ActivityType = 
