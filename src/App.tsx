@@ -131,6 +131,11 @@ export default function App() {
         onAdd={ui.handleAddMealLog}
         onUpdate={ui.handleUpdateMealLog}
         editMeal={ui.editingMeal}
+        items={items}
+        categories={categories}
+        activities={activities}
+        decrementStock={inventory.decrementStock}
+        archiveItem={inventory.archiveItem}
       />
 
       <AddItemModal 
@@ -138,6 +143,7 @@ export default function App() {
         onClose={ui.handleCloseAddModal} 
         categories={categories}
         items={items}
+        activities={activities}
         onAdd={inventory.addItem}
         onEdit={inventory.updateItem}
         initialCategory={ui.activeCategoryId}

@@ -1,19 +1,19 @@
 import React from 'react';
-import { Category, InventoryItem } from '../../../shared/types';
+import { Category, InventoryItem, ActivityEntry } from '../../../shared/types';
 import { X, Search, FileText, ChevronUp, ChevronDown } from 'lucide-react';
 import { useModalNavigation } from '../../../shared/lib/hooks/useModalNavigation';
 import { isExpiryCategoryId } from '../../../constants';
 import { useAddItemForm } from '../lib/useAddItemForm';
 import { CategorySelector } from './AddItemModal/CategorySelector';
-import { SuggestionList } from './AddItemModal/SuggestionList';
+import { SuggestionList } from '../../../shared/ui/SuggestionList';
 import { PriceSection } from './AddItemModal/PriceSection';
 import { UnitPicker } from './AddItemModal/UnitPicker';
-
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   categories: Category[];
   items: InventoryItem[];
+  activities: ActivityEntry[];
   onAdd: (item: Omit<InventoryItem, 'id' | 'createdAt'>) => void;
   onEdit?: (id: string, updates: Partial<InventoryItem>) => void;
   initialCategory: string;
@@ -22,7 +22,7 @@ interface Props {
   isDuplicate?: boolean;
 }
 
-export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit, initialCategory, initialValues, editItem, isDuplicate }: Props) {
+export function AddItemModal({ isOpen, onClose, categories, items, activities, onAdd, onEdit, initialCategory, initialValues, editItem, isDuplicate }: Props) {
   const { state, actions } = useAddItemForm({
     isOpen,
     onClose,
@@ -31,6 +31,7 @@ export function AddItemModal({ isOpen, onClose, categories, items, onAdd, onEdit
     editItem,
     isDuplicate,
     items,
+    activities,
     onAdd,
     onEdit,
   });

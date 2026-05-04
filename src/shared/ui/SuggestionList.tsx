@@ -1,6 +1,6 @@
 import React from 'react';
 import { BoxSelect } from 'lucide-react';
-import { InventoryItem, Category } from '../../../../shared/types';
+import { InventoryItem, Category } from '../types';
 
 interface SuggestionListProps {
   suggestions: InventoryItem[];

@@ -1,5 +1,5 @@
 import React from 'react';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, AlertTriangle, AlertCircle } from 'lucide-react';
 
 interface ItemBadgesProps {
   isOpened: boolean;
@@ -39,9 +39,9 @@ export function ItemBadges({
         </>
       )}
       {isAlert && !isArchived && (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-500 text-white text-[10px] font-black rounded-full shadow-lg shadow-rose-100 border border-rose-600 whitespace-nowrap animate-bounce">
-          <span className="w-1.5 h-1.5 rounded-full bg-white" />
-          {isPercentAlert ? 'ALMOST EMPTY' : 'LOW STOCK'}
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-white text-[10px] font-black rounded-full shadow-lg whitespace-nowrap animate-bounce ${isPercentAlert ? 'bg-rose-600 shadow-rose-200 border border-rose-700' : 'bg-amber-500 shadow-amber-100 border border-amber-600'}`}>
+          {isPercentAlert ? <AlertTriangle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+          {isPercentAlert ? 'CRITICAL LOW' : 'LOW STOCK'}
         </span>
       )}
       {isArchived && (

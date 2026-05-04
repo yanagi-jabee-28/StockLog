@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Download, Upload, CheckCircle2, AlertCircle, RefreshCw, Github } from 'lucide-react';
+import { X, Download, Upload, CheckCircle2, AlertCircle, RefreshCw, Github, Copy, Clipboard } from 'lucide-react';
 import { inventoryRepository } from '../../../entities/inventory/api/LocalStorageInventoryRepository';
 import { useModalNavigation } from '../../../shared/lib/hooks/useModalNavigation';
 import { logError } from '../../../shared/lib/logger';
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
-  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error' | 'copied'>('idle');
   const [isRecovering, setIsRecovering] = useState(false);
   
   // Handle Escape key and mobile Back gesture
@@ -23,7 +23,6 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
   if (!isOpen) return null;
 
   const handleExport = () => {
-    // ... existing
     const data = inventoryRepository.exportData();
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -36,8 +35,38 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
     URL.revokeObjectURL(url);
   };
 
+  const handleCopyToClipboard = async () => {
+    const data = inventoryRepository.exportData();
+    try {
+      await navigator.clipboard.writeText(data);
+      setImportStatus('copied');
+      setTimeout(() => setImportStatus('idle'), 2000);
+    } catch (err) {
+      logError('Copy to clipboard failed:', err);
+      setImportStatus('error');
+      setTimeout(() => setImportStatus('idle'), 2000);
+    }
+  };
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const success = inventoryRepository.importData(text);
+      if (success) {
+        setImportStatus('success');
+        onDataImported();
+      } else {
+        setImportStatus('error');
+      }
+      setTimeout(() => setImportStatus('idle'), 2000);
+    } catch (err) {
+      logError('Paste from clipboard failed:', err);
+      setImportStatus('error');
+      setTimeout(() => setImportStatus('idle'), 2000);
+    }
+  };
+
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // ... existing
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -80,7 +109,6 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
 
     setIsRecovering(true);
     try {
-      // Keep a downloadable backup before any recovery action.
       const backup = inventoryRepository.exportData();
       const blob = new Blob([backup], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -92,7 +120,6 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      // Heal malformed app data and force clean browser-side runtime caches.
       inventoryRepository.repairData();
 
       if ('caches' in window) {
@@ -150,39 +177,55 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
               Data Backup
             </label>
             <div className="space-y-2">
-              <button
-                onClick={handleExport}
-                className="w-full flex items-center gap-4 px-5 py-4 bg-gray-50 hover:bg-white border border-transparent hover:border-gray-100 rounded-2xl transition-all group"
-              >
-                <div className="w-12 h-12 rounded-full bg-white text-gray-900 flex items-center justify-center shadow-sm border border-gray-100 group-hover:scale-105 transition-transform">
-                  <Download className="w-5 h-5" />
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className="text-sm font-bold text-gray-900">エクスポート</span>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">JSON Download</span>
-                </div>
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={handleExport}
+                  className="flex flex-col items-center gap-2 p-4 bg-gray-50 hover:bg-white border border-transparent hover:border-gray-100 rounded-2xl transition-all group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-white text-gray-900 flex items-center justify-center shadow-sm border border-gray-100 group-hover:scale-105 transition-transform">
+                    <Download className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-bold text-gray-900 uppercase">JSON Export</span>
+                </button>
+                <button
+                  onClick={handleCopyToClipboard}
+                  className="flex flex-col items-center gap-2 p-4 bg-gray-50 hover:bg-white border border-transparent hover:border-gray-100 rounded-2xl transition-all group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-white text-gray-900 flex items-center justify-center shadow-sm border border-gray-100 group-hover:scale-105 transition-transform">
+                    <Copy className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-bold text-gray-900 uppercase">Copy JSON</span>
+                </button>
+              </div>
 
-              <input 
-                type="file" 
-                accept=".json" 
-                ref={fileInputRef}
-                onChange={handleImport}
-                className="hidden"
-                id="import-file-settings"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full flex items-center gap-4 px-5 py-4 bg-gray-50 hover:bg-white border border-transparent hover:border-gray-100 rounded-2xl transition-all group"
-              >
-                <div className="w-12 h-12 rounded-full bg-white text-gray-900 flex items-center justify-center shadow-sm border border-gray-100 group-hover:scale-105 transition-transform">
-                  <Upload className="w-5 h-5" />
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className="text-sm font-bold text-gray-900">インポート</span>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Restore Data</span>
-                </div>
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  ref={fileInputRef}
+                  onChange={handleImport}
+                  className="hidden"
+                  id="import-file-settings"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center gap-2 p-4 bg-gray-50 hover:bg-white border border-transparent hover:border-gray-100 rounded-2xl transition-all group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-white text-gray-900 flex items-center justify-center shadow-sm border border-gray-100 group-hover:scale-105 transition-transform">
+                    <Upload className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-bold text-gray-900 uppercase">JSON Import</span>
+                </button>
+                <button
+                  onClick={handlePasteFromClipboard}
+                  className="flex flex-col items-center gap-2 p-4 bg-gray-50 hover:bg-white border border-transparent hover:border-gray-100 rounded-2xl transition-all group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-white text-gray-900 flex items-center justify-center shadow-sm border border-gray-100 group-hover:scale-105 transition-transform">
+                    <Clipboard className="w-4 h-4" />
+                  </div>
+                  <span className="text-[10px] font-bold text-gray-900 uppercase">Paste JSON</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -241,10 +284,16 @@ export function SettingsModal({ isOpen, onClose, onDataImported }: Props) {
                 <span>SUCCESS!</span>
               </div>
             )}
+            {importStatus === 'copied' && (
+              <div className="mt-4 flex items-center justify-center gap-2 text-[11px] font-bold text-violet-600 bg-violet-50 py-3 rounded-xl border border-violet-100 animate-in fade-in slide-in-from-top-2">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>COPIED TO CLIPBOARD</span>
+              </div>
+            )}
             {importStatus === 'error' && (
               <div className="mt-4 flex items-center justify-center gap-2 text-[11px] font-bold text-rose-600 bg-rose-50 py-3 rounded-xl border border-rose-100 animate-in fade-in slide-in-from-top-2">
                 <AlertCircle className="w-4 h-4" />
-                <span>INVALID FILE</span>
+                <span>INVALID DATA</span>
               </div>
             )}
           </div>
