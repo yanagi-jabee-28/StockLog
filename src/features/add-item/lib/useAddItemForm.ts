@@ -1,6 +1,9 @@
-import { useState, useMemo, useCallback, useRef, useLayoutEffect, useEffect } from 'react';
-import { InventoryItem, Category, ActivityEntry } from '../../../shared/types';
+import { useState, useMemo, useCallback, useLayoutEffect } from 'react';
+import { InventoryItem, ActivityEntry } from '../../../shared/types';
 import { ModalCloseReason } from '../../../shared/lib/hooks/useModalNavigation';
+import { useHoldToAdjust } from '../../../shared/lib/hooks/useHoldToAdjust';
+import { useSuggestions } from './useSuggestions';
+
 interface UseAddItemFormProps {
   isOpen: boolean;
   onClose: () => void;
@@ -40,13 +43,6 @@ export function useAddItemForm({
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isUnitPickerOpen, setIsUnitPickerOpen] = useState(false);
-
-  const contentAmountRepeatRef = useRef<number | null>(null);
-  const contentAmountLongPressRef = useRef<number | null>(null);
-  const stockRepeatRef = useRef<number | null>(null);
-  const stockLongPressRef = useRef<number | null>(null);
-  const alertRepeatRef = useRef<number | null>(null);
-  const alertLongPressRef = useRef<number | null>(null);
 
   const initialFormState = useMemo(() => {
     if (editItem) {
@@ -115,49 +111,8 @@ export function useAddItemForm({
     setShowUnsavedConfirm(false);
   };
 
-  const suggestions = useMemo(() => {
-    if (!name.trim() || name.length < 1) return [];
-    
-    // 1. Calculate frequency and recency from activities
-    const stats = new Map<string, { count: number; lastUsed: number }>();
-    const now = Date.now();
-
-    // Activities provide usage history
-    activities.forEach(activity => {
-      const lowerName = activity.itemName.toLowerCase();
-      const timeWeight = Math.max(0, 1 - (now - new Date(activity.timestamp).getTime()) / (30 * 24 * 60 * 60 * 1000)); // Decay over 30 days
-      const current = stats.get(lowerName) || { count: 0, lastUsed: 0 };
-      stats.set(lowerName, {
-        count: current.count + (1 + timeWeight), // More weight to frequent and recent items
-        lastUsed: Math.max(current.lastUsed, new Date(activity.timestamp).getTime())
-      });
-    });
-
-    // Items list provides unique templates
-    const uniqueItemsMap = new Map<string, InventoryItem>();
-    items.forEach(item => {
-      const lowerName = item.name.toLowerCase();
-      if (!uniqueItemsMap.has(lowerName) || (!uniqueItemsMap.get(lowerName)?.isArchived && item.isArchived)) {
-         // Prefer active items as templates, but keep archived ones if they are unique
-         uniqueItemsMap.set(lowerName, item);
-      }
-    });
-
-    return Array.from(uniqueItemsMap.values())
-      .filter(item => 
-        item.name.toLowerCase().includes(name.toLowerCase()) && 
-        item.name.toLowerCase() !== name.toLowerCase()
-      )
-      .sort((a, b) => {
-        const statsA = stats.get(a.name.toLowerCase()) || { count: 0, lastUsed: 0 };
-        const statsB = stats.get(b.name.toLowerCase()) || { count: 0, lastUsed: 0 };
-        
-        // Primary sort by frequency (weighted), secondary by name
-        if (statsB.count !== statsA.count) return statsB.count - statsA.count;
-        return a.name.localeCompare(b.name);
-      })
-      .slice(0, 8); // Increased to 8 for better reach
-  }, [items, activities, name]);
+  // サジェスト機能の分離
+  const suggestions = useSuggestions(name, items, activities);
 
   const handleSelectSuggestion = (suggestion: InventoryItem) => {
     setName(suggestion.name);
@@ -176,98 +131,43 @@ export function useAddItemForm({
     return Math.round((price / amount) * 100) / 100;
   }, [purchasePrice, contentAmount]);
 
-  const changeStockBy = (delta: number) => {
-    setStock(current => {
-      const nextValue = Math.max(0, (parseInt(current) || 0) + delta);
-      return nextValue.toString();
-    });
-  };
-
-  const changeAlertThresholdBy = (delta: number) => {
-    setAlertThreshold(current => {
-      const nextValue = Math.max(0, (parseInt(current) || 0) + delta);
-      return nextValue.toString();
-    });
-  };
-
-  const changeContentAmountBy = (delta: number) => {
+  // 値の増減処理
+  const changeContentAmountBy = useCallback((delta: number) => {
     setContentAmount(current => {
       const currentValue = parseFloat(current) || 0;
       const nextValue = Math.max(0, Math.round((currentValue + delta) * 100) / 100);
       return Number.isInteger(nextValue) ? String(nextValue) : nextValue.toString();
     });
-  };
+  }, []);
 
-  const clearContentAmountTimers = () => {
-    if (contentAmountLongPressRef.current !== null) {
-      window.clearTimeout(contentAmountLongPressRef.current);
-      contentAmountLongPressRef.current = null;
-    }
-    if (contentAmountRepeatRef.current !== null) {
-      window.clearInterval(contentAmountRepeatRef.current);
-      contentAmountRepeatRef.current = null;
-    }
-  };
+  const changeStockBy = useCallback((delta: number) => {
+    setStock(current => {
+      const nextValue = Math.max(0, (parseInt(current) || 0) + delta);
+      return nextValue.toString();
+    });
+  }, []);
 
-  const clearStockTimers = () => {
-    if (stockLongPressRef.current !== null) {
-      window.clearTimeout(stockLongPressRef.current);
-      stockLongPressRef.current = null;
-    }
-    if (stockRepeatRef.current !== null) {
-      window.clearInterval(stockRepeatRef.current);
-      stockRepeatRef.current = null;
-    }
-  };
+  const changeAlertThresholdBy = useCallback((delta: number) => {
+    setAlertThreshold(current => {
+      const nextValue = Math.max(0, (parseInt(current) || 0) + delta);
+      return nextValue.toString();
+    });
+  }, []);
 
-  const clearAlertTimers = () => {
-    if (alertLongPressRef.current !== null) {
-      window.clearTimeout(alertLongPressRef.current);
-      alertLongPressRef.current = null;
-    }
-    if (alertRepeatRef.current !== null) {
-      window.clearInterval(alertRepeatRef.current);
-      alertRepeatRef.current = null;
-    }
-  };
+  // 汎用タイマー制御フックの利用
+  const { startAdjust: startContentAmountAdjust, stopAdjust: stopContentAmountAdjust } = useHoldToAdjust(changeContentAmountBy);
+  const { startAdjust: baseStartStockAdjust, stopAdjust: stopStockAdjust } = useHoldToAdjust(changeStockBy);
+  const { startAdjust: baseStartAlertAdjust, stopAdjust: stopAlertAdjust } = useHoldToAdjust(changeAlertThresholdBy);
 
-  const startContentAmountAdjust = (delta: number) => {
-    clearContentAmountTimers();
-    changeContentAmountBy(delta);
-    contentAmountLongPressRef.current = window.setTimeout(() => {
-      contentAmountRepeatRef.current = window.setInterval(() => {
-        changeContentAmountBy(delta);
-      }, 120);
-    }, 320);
-  };
-
-  const stopContentAmountAdjust = () => clearContentAmountTimers();
-
-  const startStockAdjust = (delta: number) => {
+  const startStockAdjust = useCallback((delta: number) => {
     if (delta < 0 && (parseInt(stock) || 0) <= 0) return;
-    clearStockTimers();
-    changeStockBy(delta);
-    stockLongPressRef.current = window.setTimeout(() => {
-      stockRepeatRef.current = window.setInterval(() => {
-        changeStockBy(delta);
-      }, 120);
-    }, 320);
-  };
+    baseStartStockAdjust(delta);
+  }, [stock, baseStartStockAdjust]);
 
-  const stopStockAdjust = () => clearStockTimers();
-
-  const startAlertAdjust = (delta: number) => {
+  const startAlertAdjust = useCallback((delta: number) => {
     if (delta < 0 && (parseInt(alertThreshold) || 0) <= 0) return;
-    clearAlertTimers();
-    changeAlertThresholdBy(delta);
-    alertLongPressRef.current = window.setTimeout(() => {
-      alertRepeatRef.current = window.setInterval(() => {
-        changeAlertThresholdBy(delta);
-      }, 120);
-    }, 320);
-  };
-
-  const stopAlertAdjust = () => clearAlertTimers();
+    baseStartAlertAdjust(delta);
+  }, [alertThreshold, baseStartAlertAdjust]);
 
   const handleSelectContentUnit = (selectedUnit: string) => {
     setContentUnit(selectedUnit);
@@ -306,14 +206,6 @@ export function useAddItemForm({
       }
     }
   }, [isOpen, initialCategory, editItem, initialValues]);
-
-  useEffect(() => {
-    return () => {
-      clearContentAmountTimers();
-      clearStockTimers();
-      clearAlertTimers();
-    };
-  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
